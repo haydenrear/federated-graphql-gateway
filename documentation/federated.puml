@@ -1,0 +1,10 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Client --> Gateway: Send post/get request with mimetype
+Gateway --> DataServices: Log changes transactionally, forward requests to associated data services
+DataServices --> Client: Make changes & get results
+
+@enduml

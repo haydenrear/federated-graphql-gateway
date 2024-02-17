@@ -1,0 +1,5 @@
+dgs.reload: true
+spring:
+  cloud:
+    zookeeper:
+      connect-string: localhost:2181
