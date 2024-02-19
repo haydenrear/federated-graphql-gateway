@@ -14,17 +14,17 @@ import java.util.stream.Stream;
 public class MimeTypeRegistry {
 
 
-//    private final Map<DataFetcherSourceId, GraphQlDataFetcher.DataFetcherRegistration> mimeTypes
-//            = new ConcurrentHashMap<>();
-//
-//    public void register(@NotNull GraphQlDataFetcher.DataFetcherRegistration toRegister) {
-//        mimeTypes.put(toRegister.id(), toRegister);
-//    }
-//
-//    public Stream<GraphQlDataFetcher.DataFetcherRegistration> fromMimeType(MimeType mimeType) {
-//        return mimeTypes.entrySet().stream()
-//                .filter(m -> m.getKey().mimeType().equals(mimeType))
-//                .map(Map.Entry::getValue);
-//    }
-//
+    private final Map<DataFetcherSourceId, GraphQlDataFetcher.DataFetcherRegistration> mimeTypes
+            = new ConcurrentHashMap<>();
+
+    public void register(@NotNull GraphQlDataFetcher.DataFetcherRegistration toRegister) {
+        mimeTypes.put(toRegister.id(), toRegister);
+    }
+
+    public Stream<GraphQlDataFetcher.DataFetcherRegistration> fromMimeType(MimeType mimeType) {
+        return mimeTypes.entrySet().stream()
+                .filter(m -> m.getKey().mimeType().equals(mimeType))
+                .map(Map.Entry::getValue);
+    }
+
 }

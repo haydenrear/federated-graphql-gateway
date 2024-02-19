@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class JavaCompile {
 
-    private final CompileFileProvider compileFileProvider;
+    private final CompileFileProvider dgsCompileFileProvider;
 
     public record CompileArgs(String compileWriterIn, String compilerIn, @Nullable String compilerOut) {
         public CompileArgs(String compileWriterIn, String compilerIn) {
@@ -35,7 +35,7 @@ public class JavaCompile {
     }
 
     public List<Class<?>> compileAndLoad(CompileArgs args) {
-        var found = compileFileProvider.toCompileFiles(args);
+        var found = dgsCompileFileProvider.toCompileFiles(args);
 
         if (doCompilation(found.stream().map(CompilerSourceWriter.ToCompileFile::file).toList())) {
             return found.stream()

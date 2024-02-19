@@ -1,3 +1,4 @@
+dgs.graphql.schema-locations: file:src/main/resources/graphql/*.graphql*
 spring:
   cloud:
     zookeeper:
@@ -7,4 +8,6 @@ spring:
     username: postgres
     password: postgres
     url: jdbc:postgresql://localhost:5432/postgres
-
+  graphql:
+    schema:
+      locations: file:src/main/resources/graphql/*.graphql*

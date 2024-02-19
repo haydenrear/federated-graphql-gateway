@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.converter.json.JsonbHttpMessageConverter;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.http.dsl.Http;
@@ -26,7 +27,7 @@ public class IntegrationConfig {
     public IntegrationFlow integrationFlow(FederatedGraphQlMessageHandler graphQlMessageHandler) {
         return IntegrationFlow.from(
                         Http.inboundGateway("/hello")
-                                .requestMapping(r -> r.methods(HttpMethod.GET))
+                                .requestMapping(r -> r.methods(HttpMethod.POST))
                 )
                 .handle(graphQlMessageHandler)
                 .get();

@@ -20,7 +20,9 @@ public class FederatedGraphQlTransportRegistrar {
     @Autowired(required = false)
     private ReloadIndicator reloadIndicator;
 
+
     private final FederatedGraphQlTransport federatedGraphQlTransport;
+
 
     public FederatedGraphQlTransportResult transport() {
         if (reloadIndicator.doReload()) {

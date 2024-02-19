@@ -1,12 +1,16 @@
 package com.hayden.gateway.discovery;
 
+import com.hayden.gateway.GatewayApplication;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
+import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
+import com.hayden.graphql.federated.transport.FetcherGraphQlTransport;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
 import com.hayden.graphql.models.visitor.*;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
+import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
 import lombok.SneakyThrows;
@@ -24,9 +28,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.MimeType;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -41,12 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
+@ActiveProfiles("deploy-test")
 @ExtendWith(SpringExtension.class)
-@TestPropertySource(
-        properties = {
-                "compiler.in.path=src/test/resources"
-        }
-)
 @Slf4j
 public class SchemaBuilderTest {
 
@@ -76,7 +79,7 @@ public class SchemaBuilderTest {
         Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
         var fs = FileUtils.readFileToString(new File("src/main/resources/graphql/any_pb.graphql"), Charset.defaultCharset());
         var test = FileUtils.readFileToString(new File("src/main/resources/graphql/test.graphql"), Charset.defaultCharset());
-        var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.txt"), Charset.defaultCharset());
+        var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.java"), Charset.defaultCharset());
         mockServiceProvider(fs, test, fetcher);
     }
 
@@ -84,16 +87,16 @@ public class SchemaBuilderTest {
         Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
                 .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
                         new GraphQlDataFetcher(
-                                "test",
-                                new GraphQlFederatedSchemaSource(
-                                        Map.of(GraphQlTarget.String, List.of(fs, test))
-                                ),
-                                List.of(
-                                        new DataFetcherGraphQlSource(
-                                                "TestIn",
-                                                Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn"),
-                                                       new DataSource(GraphQlTarget.String, fetcher))
-                                        ))
+                                new GraphQlDataFetcherDiscoveryModel(
+                                        "test",
+                                        List.of(),
+                                        List.of(
+                                                new DataFetcherGraphQlSource(
+                                                        "TestIn",
+                                                        Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn", MimeType.valueOf("text/html")),
+                                                                new DataSource(GraphQlTarget.String, fetcher))
+                                                ))
+                                )
                         )
                 ))));
     }
@@ -120,7 +123,7 @@ public class SchemaBuilderTest {
     }
 
     private void waitUntilServices() throws InterruptedException {
-        while (((ConcurrentHashMap<String, GraphQlDataFetcher>) ReflectionTestUtils.getField(discovery, "services")).isEmpty())
+        while (discovery.isServicesEmpy())
             Thread.sleep(30);
         queryExecutor.execute("");
     }

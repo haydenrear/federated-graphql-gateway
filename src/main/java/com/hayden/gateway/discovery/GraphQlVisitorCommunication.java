@@ -20,8 +20,6 @@ import java.util.concurrent.*;
 @Slf4j
 public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
 
-    @Autowired
-    private DiscoveryProperties discoveryProperties;
 
     private record DelayedService(String host, int discoveryPingSeconds) implements Delayed {
 
@@ -37,7 +35,8 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
 
     }
 
-
+    @Autowired
+    private DiscoveryProperties discoveryProperties;
     @Autowired
     private DiscoveryClient discoveryClient;
     @Autowired
@@ -49,10 +48,14 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     /**
      * TODO: does this need to be more granular, one per each GraphQlServiceApiVisitor type?
      */
-    private DelayQueue<DelayedService> callServiceAgain = new DelayQueue<>();
-    private ConcurrentHashMap<String, ServiceVisitorDelegate> services = new ConcurrentHashMap<>();
-    private Queue<ServiceVisitorDelegate> toAdd = new ConcurrentLinkedDeque<>();
-    private CountDownLatch getRegistrations = new CountDownLatch(1);
+    private final DelayQueue<DelayedService> callServiceAgain = new DelayQueue<>();
+    private final ConcurrentHashMap<String, ServiceVisitorDelegate> services = new ConcurrentHashMap<>();
+    private final Queue<ServiceVisitorDelegate> toAdd = new ConcurrentLinkedDeque<>();
+    private final CountDownLatch getRegistrations = new CountDownLatch(1);
+
+    public boolean isServicesEmpy() {
+        return services.isEmpty();
+    }
 
     @PostConstruct
     public void runDiscovery() {
@@ -97,7 +100,7 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     }
 
      public boolean doReload() {
-        return this.toAdd.size() != 0;
+        return !this.toAdd.isEmpty();
     }
 
     @SneakyThrows

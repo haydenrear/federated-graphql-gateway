@@ -1,5 +1,6 @@
 package com.hayden.gateway.compile;
 
+import com.hayden.gateway.compile.compile_in.DgsCompileFileProvider;
 import com.hayden.gateway.config.CompilerConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +11,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = {JavaCompile.class, CompilerSourceWriter.class, CompilerConfig.class})
+@SpringBootTest(classes = {JavaCompile.class, CompilerSourceWriter.class, CompilerConfig.class, DgsCompileFileProvider.class})
 @ExtendWith(SpringExtension.class)
 class JavaCompileDgsTest {
 
@@ -21,6 +22,6 @@ class JavaCompileDgsTest {
     @Test
     void compileAndLoad() {
         var loaded = javaCompile.compileAndLoad(new JavaCompile.CompileArgs("src/test/resources/graphql", "dgs_in"));
-        assertThat(loaded.size()).isNotZero();
+        assertThat(loaded.size()).isEqualTo(48);
     }
 }

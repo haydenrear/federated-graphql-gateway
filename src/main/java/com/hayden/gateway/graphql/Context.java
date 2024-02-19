@@ -11,8 +11,7 @@ public interface Context {
 
     record TypeDefinitionContext() implements Context {}
 
-    record MimeTypeDefinitionContext(
-            List dataFetchers) implements Context {}
+    record MimeTypeDefinitionContext(List<GraphQlDataFetcher.DataFetcherRegistration> dataFetchers) implements Context {}
 
     record GraphQlTransportContext(List<FederatedGraphQlTransport.GraphQlTransportRegistration> transportRegistrations) {
 

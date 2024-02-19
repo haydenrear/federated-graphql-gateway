@@ -24,7 +24,7 @@ public class DgsCompiler {
 
     public Collection<GraphQlFetcherSourceResult> dataFetcherClasses(
             Collection<DataFetcherGraphQlSource> sources,
-            GraphQlFederatedSchemaSource schemaSource
+            Collection<GraphQlFederatedSchemaSource> schemaSource
     ) {
         // write the source to files or copy the files, do codegen where necessary, and then return the params fetchers
         // for the fields.

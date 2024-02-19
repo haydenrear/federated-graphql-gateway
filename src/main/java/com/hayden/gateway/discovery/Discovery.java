@@ -4,6 +4,7 @@ import com.hayden.gateway.compile.DgsCompiler;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.RegistriesComposite;
+import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
@@ -18,10 +19,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 
-@Component
-@Qualifier("dgs")
 @Slf4j
 @DgsComponent
+@Component
 public class Discovery {
 
     @Autowired
@@ -40,13 +40,17 @@ public class Discovery {
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
+    private final FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
 
 
-    public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar, MimeTypeRegistry mimetypeRegistry) {
+    public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar,
+                     MimeTypeRegistry mimetypeRegistry,
+                     FederatedDynamicGraphQlSource federatedDynamicGraphQlSource) {
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
         this.codegenContext = new Context.CodegenContext(this.compileDgs);
         this.mimetypeRegistry = mimetypeRegistry;
         this.transportRegistrar = transportRegistrar;
+        this.federatedDynamicGraphQlSource = federatedDynamicGraphQlSource;
     }
 
     @DgsCodeRegistry
@@ -57,7 +61,7 @@ public class Discovery {
         // it wants, if they can provide the code to serialize it. So the goal would be to have the Gateway be a
         // GraphQl interface and then the services are agnostic to serialization by being able to provide their own
         // serialization framework at runtime.
-
+        this.federatedDynamicGraphQlSource.setReload();
         this.communication.visit(
                 new RegistriesComposite(registry, codeRegistryBuilder, this.mimetypeRegistry, this.transportRegistrar),
                 new Context.RegistriesContext(
@@ -72,6 +76,7 @@ public class Discovery {
     @DgsTypeDefinitionRegistry
     public TypeDefinitionRegistry registry() {
         waitForInitialRegistration();
+        this.federatedDynamicGraphQlSource.setReload();
         this.communication.visit(
                 new RegistriesComposite(this.typeDefinitionRegistry, this.mimetypeRegistry, this.transportRegistrar),
                 new Context.RegistriesContext(
