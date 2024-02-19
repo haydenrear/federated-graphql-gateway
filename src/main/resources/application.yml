@@ -1,5 +1,10 @@
-dgs.reload: true
 spring:
   cloud:
     zookeeper:
       connect-string: localhost:2181
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/postgres
+

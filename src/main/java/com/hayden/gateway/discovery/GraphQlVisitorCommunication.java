@@ -1,8 +1,8 @@
 package com.hayden.gateway.discovery;
 
+import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.idl.TypeDefinitionRegistry;
+import com.hayden.gateway.graphql.RegistriesComposite;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -49,12 +49,10 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     /**
      * TODO: does this need to be more granular, one per each GraphQlServiceApiVisitor type?
      */
-    private DelayQueue<DelayedService> callServiceAgain;
-    private ConcurrentHashMap<String, GraphQlServiceProvider.ServiceVisitorDelegate> services;
-    private Queue<GraphQlServiceProvider.ServiceVisitorDelegate> toAdd;
-    private CountDownLatch getRegistrations;
-
-    private List<Class<? extends GraphQlServiceApiVisitor>> visitorTypes;
+    private DelayQueue<DelayedService> callServiceAgain = new DelayQueue<>();
+    private ConcurrentHashMap<String, ServiceVisitorDelegate> services = new ConcurrentHashMap<>();
+    private Queue<ServiceVisitorDelegate> toAdd = new ConcurrentLinkedDeque<>();
+    private CountDownLatch getRegistrations = new CountDownLatch(1);
 
     @PostConstruct
     public void runDiscovery() {
@@ -64,12 +62,13 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
             public void run() {
                 var contains = new HashSet<String>();
                 removeExpiredServices();
-                discoveryClient.getInstances("GRAPHQL_SERVICE")
+                Optional.ofNullable(discoveryClient.getInstances("GRAPHQL_SERVICE"))
                         .stream()
+                        .flatMap(Collection::stream)
                         .filter(s -> Objects.nonNull(s.getHost()))
                         .peek(s -> contains.add(s.getHost()))
                         .filter(s -> !services.containsKey(s.getHost()))
-                        .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost(), visitorTypes)
+                        .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost())
                                 .stream()
                         )
                         .forEach(this::putServices);
@@ -80,7 +79,7 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
                     getRegistrations.countDown();
             }
 
-            private void putServices(GraphQlServiceProvider.ServiceVisitorDelegate service) {
+            private void putServices(ServiceVisitorDelegate service) {
                 services.put(service.host(), service);
                 callServiceAgain.add(new DelayedService(service.host(), discoveryProperties.getDiscoveryPingSeconds()));
             }
@@ -89,7 +88,7 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     }
 
     @Override
-    public void visit(RegistryContext registries, RegistriesContext context) {
+    public void visit(RegistriesComposite registries, Context.RegistriesContext context) {
         waitForInitialRegistration();
         while (!toAdd.isEmpty()) {
             var s = toAdd.poll();

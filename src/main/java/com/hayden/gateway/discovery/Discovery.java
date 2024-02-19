@@ -1,8 +1,9 @@
 package com.hayden.gateway.discovery;
 
 import com.hayden.gateway.compile.DgsCompiler;
-import com.hayden.gateway.compile.JavaCompile;
-import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
+import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
+import com.hayden.gateway.graphql.Context;
+import com.hayden.gateway.graphql.RegistriesComposite;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
@@ -15,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
 @Component
 @Qualifier("dgs")
@@ -34,17 +35,18 @@ public class Discovery {
     @Autowired
     private MethodDataFetcherFactory methodDataFetcherFactory;
 
+    private FederatedGraphQlTransportRegistrar transportRegistrar;
+
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
-    private final GraphQlServiceApiVisitor.CodegenContext codegenContext;
-    private final GraphQlServiceApiVisitor.TypeDefinitionContext typeDefinitionContext;
+    private final Context.CodegenContext codegenContext;
 
 
-    public Discovery() {
+    public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar, MimeTypeRegistry mimetypeRegistry) {
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
-        this.codegenContext = new GraphQlServiceApiVisitor.CodegenContext(this.compileDgs);
-        this.typeDefinitionContext = new GraphQlServiceApiVisitor.TypeDefinitionContext();
-        this.mimetypeRegistry = new MimeTypeRegistry();
+        this.codegenContext = new Context.CodegenContext(this.compileDgs);
+        this.mimetypeRegistry = mimetypeRegistry;
+        this.transportRegistrar = transportRegistrar;
     }
 
     @DgsCodeRegistry
@@ -57,10 +59,11 @@ public class Discovery {
         // serialization framework at runtime.
 
         this.communication.visit(
-                new GraphQlServiceApiVisitor.RegistryContext(registry, codeRegistryBuilder, this.mimetypeRegistry),
-                new GraphQlServiceApiVisitor.RegistriesContext(
-                        typeDefinitionContext,
-                        codegenContext
+                new RegistriesComposite(registry, codeRegistryBuilder, this.mimetypeRegistry, this.transportRegistrar),
+                new Context.RegistriesContext(
+                        new Context.TypeDefinitionContext(),
+                        codegenContext,
+                        new Context.GraphQlTransportContext(new ArrayList<>())
                 )
         );
         return codeRegistryBuilder;
@@ -70,9 +73,11 @@ public class Discovery {
     public TypeDefinitionRegistry registry() {
         waitForInitialRegistration();
         this.communication.visit(
-                new GraphQlServiceApiVisitor.RegistryContext(this.typeDefinitionRegistry, this.mimetypeRegistry),
-                new GraphQlServiceApiVisitor.RegistriesContext(
-                        typeDefinitionContext, codegenContext
+                new RegistriesComposite(this.typeDefinitionRegistry, this.mimetypeRegistry, this.transportRegistrar),
+                new Context.RegistriesContext(
+                        new Context.TypeDefinitionContext(),
+                        codegenContext,
+                        new Context.GraphQlTransportContext(new ArrayList<>())
                 )
         );
         return this.typeDefinitionRegistry;

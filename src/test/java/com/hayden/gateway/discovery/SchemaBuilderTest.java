@@ -1,7 +1,12 @@
 package com.hayden.gateway.discovery;
 
 import com.hayden.gateway.compile.JavaCompile;
-import com.hayden.gateway.graphql.GraphQlServiceRegistration;
+import com.hayden.gateway.graphql.GraphQlDataFetcher;
+import com.hayden.graphql.models.GraphQlTarget;
+import com.hayden.graphql.models.SourceType;
+import com.hayden.graphql.models.visitor.*;
+import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
+import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
 import lombok.SneakyThrows;
@@ -76,18 +81,18 @@ public class SchemaBuilderTest {
     }
 
     private void mockServiceProvider(String fs, String test, String fetcher) {
-        Mockito.when(serviceProvider.getServiceVisitorDelegates(any(), any()))
-                .thenReturn(Optional.of(new GraphQlServiceProvider.ServiceVisitorDelegate("test", List.of(
-                        new GraphQlServiceRegistration(
+        Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
+                .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
+                        new GraphQlDataFetcher(
                                 "test",
-                                new GraphQlServiceRegistration.GraphQlFederatedSchemaSource(
-                                        Map.of(GraphQlServiceRegistration.GraphQlTarget.String, List.of(fs, test))
+                                new GraphQlFederatedSchemaSource(
+                                        Map.of(GraphQlTarget.String, List.of(fs, test))
                                 ),
                                 List.of(
-                                        new GraphQlServiceRegistration.GraphQlFetcherSource(
+                                        new DataFetcherGraphQlSource(
                                                 "TestIn",
-                                                Map.of(new GraphQlServiceRegistration.DataFetcherSourceId(GraphQlServiceRegistration.DataFetcherSourceType.DgsComponentJava, "testIn"),
-                                                       new GraphQlServiceRegistration.DataFetcherSource(GraphQlServiceRegistration.GraphQlTarget.String, fetcher))
+                                                Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn"),
+                                                       new DataSource(GraphQlTarget.String, fetcher))
                                         ))
                         )
                 ))));
@@ -115,7 +120,7 @@ public class SchemaBuilderTest {
     }
 
     private void waitUntilServices() throws InterruptedException {
-        while (((ConcurrentHashMap<String, GraphQlServiceRegistration>) ReflectionTestUtils.getField(discovery, "services")).isEmpty())
+        while (((ConcurrentHashMap<String, GraphQlDataFetcher>) ReflectionTestUtils.getField(discovery, "services")).isEmpty())
             Thread.sleep(30);
         queryExecutor.execute("");
     }

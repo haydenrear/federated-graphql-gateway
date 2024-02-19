@@ -14,7 +14,6 @@ description = "gateway"
 tasks.register("prepareKotlinBuildScriptModel")
 
 dependencies {
-	api(project(":utilitymodule"))
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-graphql")
 	implementation("org.liquibase:liquibase-core")
@@ -29,8 +28,14 @@ dependencies {
 	implementation("com.netflix.graphql.dgs:graphql-dgs-spring-boot-starter")
 	implementation("com.netflix.graphql.dgs.codegen:graphql-dgs-codegen-core:6.1.4")
 	implementation("com.netflix.graphql.dgs:graphql-dgs-mocking:8.2.5")
-	implementation("com.squareup:javapoet:1.13.0")
 	implementation("com.apollographql.federation:federation-graphql-java-support:2.1.0")
+	implementation("com.squareup:javapoet:1.13.0")
+	implementation("org.springframework.boot:spring-boot-starter-integration")
+	implementation("org.springframework.integration:spring-integration-graphql")
+	implementation("org.springframework.integration:spring-integration-core")
+	implementation("org.springframework.integration:spring-integration-http")
+	api(project(":utilitymodule"))
+	api(project(":graphql"))
 }
 
 tasks.generateJava {

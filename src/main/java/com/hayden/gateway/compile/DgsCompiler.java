@@ -1,6 +1,9 @@
 package com.hayden.gateway.compile;
 
-import com.hayden.gateway.graphql.GraphQlServiceRegistration;
+import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
+import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
+import com.hayden.graphql.models.visitor.GraphQlFederatedSchemaSource;
+import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,11 +20,11 @@ public class DgsCompiler {
 
     private final CompilerSourceWriter sourceWriter;
 
-    public record GraphQlFetcherSourceResult(String typeName, Map<GraphQlServiceRegistration.DataFetcherSourceId, GraphQlServiceRegistration.DataFetcherMetaData> fetchers) {}
+    public record GraphQlFetcherSourceResult(String typeName, Map<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetchers) {}
 
     public Collection<GraphQlFetcherSourceResult> dataFetcherClasses(
-            Collection<GraphQlServiceRegistration.GraphQlFetcherSource> sources,
-            GraphQlServiceRegistration.GraphQlFederatedSchemaSource schemaSource
+            Collection<DataFetcherGraphQlSource> sources,
+            GraphQlFederatedSchemaSource schemaSource
     ) {
         // write the source to files or copy the files, do codegen where necessary, and then return the params fetchers
         // for the fields.

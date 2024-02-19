@@ -1,23 +1,23 @@
 package com.hayden.gateway.federated;
 
-import com.hayden.gateway.client.ClientRequest;
-import com.hayden.gateway.client.ClientResponse;
+import com.hayden.graphql.models.client.ClientRequest;
+import com.hayden.graphql.models.client.ClientResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+//@RestController
 @RequestMapping("/api/v1/federated-gateway")
 @RequiredArgsConstructor
 public class FederatedController {
 
-    private final FederatedQuery federatedQuery;
+//    private final FederatedQuery federatedQuery;
 
     @Cdc
-    @PostMapping
+//    @PostMapping
     ResponseEntity<ClientResponse> call(@RequestBody ClientRequest clientRequest) {
-        return ResponseEntity.ok(federatedQuery.execute(clientRequest));
+//        return ResponseEntity.ok(federatedQuery.execute(clientRequest));
+        return null;
     }
 
 }
