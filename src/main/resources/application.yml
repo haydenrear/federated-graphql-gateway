@@ -1,4 +1,4 @@
-dgs.graphql.schema-locations: file:src/main/resources/graphql/*.graphql*
+dgs.graphql.schema-locations: classpath:graphql/*.graphql*
 spring:
   cloud:
     zookeeper:
@@ -10,4 +10,4 @@ spring:
     url: jdbc:postgresql://localhost:5432/postgres
   graphql:
     schema:
-      locations: file:src/main/resources/graphql/*.graphql*
+      locations: classpath:graphql/*.graphql*

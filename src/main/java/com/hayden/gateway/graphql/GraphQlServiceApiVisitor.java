@@ -17,7 +17,10 @@ public interface GraphQlServiceApiVisitor {
     default void visit(RegistriesComposite registries, Context.RegistriesContext context) {
         Optional.ofNullable(registries.typeDefinitionRegistry()).ifPresent(t -> this.visit(t, context));
 
-        Optional.ofNullable(registries.codeRegistry()).flatMap(b -> Optional.ofNullable(registries.typeDefinitionRegistry()).map(t -> Pair.of(b, t)))
+        Optional.ofNullable(registries.codeRegistry())
+                .flatMap(b -> Optional.ofNullable(registries.typeDefinitionRegistry())
+                        .map(t -> Pair.of(b, t))
+                )
                 .ifPresent(t -> this.visit(registries.codeRegistry(), registries.typeDefinitionRegistry(), context));
 
         Optional.ofNullable(registries.mimeTypeRegistry()).ifPresent(t -> this.visit(t, context));

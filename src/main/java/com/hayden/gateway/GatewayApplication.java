@@ -18,9 +18,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
-@SpringBootApplication(
-//		scanBasePackageClasses = {FederatedDynamicGraphQlSource.class, FetcherGraphQlTransport.class, DgsConfig.class}
-)
+@SpringBootApplication
 @ImportAutoConfiguration({GraphQlAutoConfiguration.class, DgsAutoConfiguration.class})
 @EnableConfigurationProperties(GraphQlProperties.class)
 public class GatewayApplication {

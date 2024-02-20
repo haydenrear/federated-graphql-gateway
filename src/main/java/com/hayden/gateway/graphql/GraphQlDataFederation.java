@@ -4,7 +4,6 @@ import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
 import com.hayden.graphql.models.visitor.datafed.DataFederationSources;
 import com.hayden.graphql.models.visitor.datafed.GraphQlDataFederationModel;
-import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 
 public record GraphQlDataFederation(GraphQlDataFederationModel model)
         implements GraphQlServiceApiVisitor{

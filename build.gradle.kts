@@ -1,6 +1,7 @@
 plugins {
 	id("com.netflix.dgs.codegen") version "6.0.3"
 	id("com.hayden.spring-app")
+	id("com.hayden.observable-app")
 }
 
 description = "gateway"
@@ -12,6 +13,7 @@ description = "gateway"
 //}
 
 tasks.register("prepareKotlinBuildScriptModel")
+
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
@@ -38,10 +40,14 @@ dependencies {
 	api(project(":graphql"))
 }
 
+tasks.compileJava {
+	dependsOn("copyAgent")
+	// java -javaagent:build/agent/opentelemetry-javaagent.jar -jar build/libs/gateway-1.0.0.jar
+}
+
 tasks.generateJava {
 	schemaPaths.add("${projectDir}/src/main/resources/graphql-client")
 	packageName = "com.hayden.gateway.codegen"
 	generateClient = true
 }
-
 
