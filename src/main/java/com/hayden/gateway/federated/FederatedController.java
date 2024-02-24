@@ -2,6 +2,7 @@ package com.hayden.gateway.federated;
 
 import com.hayden.graphql.models.client.ClientRequest;
 import com.hayden.graphql.models.client.ClientResponse;
+import com.hayden.utilitymodule.Cdc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
