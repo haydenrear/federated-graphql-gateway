@@ -1,14 +1,11 @@
 package com.hayden.gateway.federated;
 
-import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
 import com.hayden.graphql.federated.transport.FederatedGraphQlTransportResult;
-import com.hayden.graphql.federated.transport.FederatedItemGraphQlTransport;
+import com.hayden.graphql.federated.transport.GraphQlRegistration;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
-import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.graphql.client.GraphQlTransport;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -33,9 +30,13 @@ public class FederatedGraphQlTransportRegistrar {
     }
 
 
-    public void visit(FederatedGraphQlTransport.GraphQlRegistration graphQlTransport) {
-        Optional.ofNullable(reloadIndicator).ifPresent(ReloadIndicator::setReload);
+    /**
+     *
+     * @param graphQlTransport
+     */
+    public void visit(GraphQlRegistration graphQlTransport) {
         federatedGraphQlTransport.register(graphQlTransport);
+        Optional.ofNullable(reloadIndicator).ifPresent(ReloadIndicator::setReload);
     }
 
 

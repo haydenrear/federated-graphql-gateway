@@ -1,6 +1,10 @@
 type Query @extends {
     ticks(first: Int, after: Int, allowCached: Boolean): TicksConnection
-    testIn: [TestIn]
+    testInArr: [TestIn]
+}
+
+type AnotherQuery @extends {
+    tDataFetcher: TestIn
 }
 
 type Mutation {
@@ -10,7 +14,6 @@ type Mutation {
 type TestIn {
     testInValue: Int
 }
-
 
 type Tick {
     id: ID

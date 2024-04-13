@@ -22,6 +22,6 @@ class JavaCompileDgsTest {
     @Test
     void compileAndLoad() {
         var loaded = javaCompile.compileAndLoad(new JavaCompile.CompileArgs("src/test/resources/graphql", "dgs_in"));
-        assertThat(loaded.size()).isEqualTo(48);
+        assertThat(loaded.size()).isEqualTo(51);
     }
 }

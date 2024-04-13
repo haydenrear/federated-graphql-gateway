@@ -1,20 +1,43 @@
 package com.hayden.gateway.graphql;
 
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
-import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
+import com.hayden.graphql.federated.transport.GraphQlRegistration;
 import com.hayden.graphql.models.visitor.datafed.DataFederationSources;
 import com.hayden.graphql.models.visitor.datafed.GraphQlDataFederationModel;
 
-public record GraphQlDataFederation(GraphQlDataFederationModel model)
-        implements GraphQlServiceApiVisitor{
+import java.util.Objects;
+import java.util.UUID;
 
-    @Override
-    public void visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar, Context.RegistriesContext registriesContext) {
-        this.model.federationSource().stream().map(this::toTransportRegistration)
-                .forEach(federatedGraphQlTransportRegistrar::visit);
+/**
+ * Add the federation for accessibility from the FederatedGraphQlClient inside the DataFetcher.
+ * @param model
+ * @param id
+ * @param removeCallback
+ */
+public record GraphQlDataFederation(GraphQlDataFederationModel model, String id, ContextCallback removeCallback)
+        implements GraphQlServiceApiVisitor {
+
+    public GraphQlDataFederation(GraphQlDataFederationModel model) {
+        this(model, UUID.randomUUID().toString(), new ContextCallback());
     }
 
-    public FederatedGraphQlTransport.GraphQlRegistration toTransportRegistration(
+    @Override
+    public void remove() {
+        removeCallback.callback.accept(id, model.serviceId());
+    }
+
+    @Override
+    public void visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar,
+                      Context.RegistriesContext registriesContext) {
+        var unregisters = this.model.federationSource().stream().map(this::toTransportRegistration)
+                .filter(Objects::nonNull)
+                .map(t -> federatedGraphQlTransportRegistrar.transport().transport().register(t))
+                .toList();
+
+        removeCallback.callback = (id, serviceId) -> unregisters.forEach(c -> c.accept(id, serviceId));
+    }
+
+    public GraphQlRegistration toTransportRegistration(
             DataFederationSources graphQlFetcherSource
     ) {
         return null;

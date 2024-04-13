@@ -1,6 +1,7 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
+import com.hayden.utilitymodule.io.FileUtils;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,12 +34,25 @@ public class JavaCompile {
             this(compileWriterIn, compilerIn, null);
         }
 
+        public Path compilerOutPath(String packageName) {
+            return Optional.ofNullable(compilerOut)
+                    .map(File::new)
+                    .orElse(new File("build/classes/java/main/%s".formatted(packageName)))
+                    .toPath();
+        }
+
+        public boolean cleanPrevious() {
+            return FileUtils.deleteFilesRecursive(Paths.get(compilerIn, "com"))
+                    && FileUtils.deleteFilesRecursive(compilerOutPath("com/netflix"));
+        }
+
     }
 
     public List<Class<?>> compileAndLoad(CompileArgs args) {
         var found = dgsCompileFileProvider.toCompileFiles(args);
 
         if (doCompilation(found.stream().map(CompilerSourceWriter.ToCompileFile::file).toList())) {
+            log.info("Starting compilation... for path {}.", args.compilerIn);
             return found.stream()
                     .map(CompilerSourceWriter.ToCompileFile::packageName)
                     .distinct()
@@ -56,7 +71,8 @@ public class JavaCompile {
                         return Stream.empty();
                     }).collect(Collectors.toList());
             }
-            return new ArrayList<>();
+        log.warn("Could not compile {}.", args);
+        return new ArrayList<>();
     }
 
     @NotNull
@@ -152,7 +168,8 @@ public class JavaCompile {
                 optionList,
                 null,
                 compilationUnit);
-        return task.call();
+        Boolean called = task.call();
+        return called;
     }
 
 

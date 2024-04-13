@@ -1,7 +1,7 @@
 package com.hayden.gateway.graphql;
 
 import com.hayden.gateway.compile.DgsCompiler;
-import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
+import com.hayden.graphql.federated.transport.GraphQlRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +13,7 @@ public interface Context {
 
     record MimeTypeDefinitionContext(List<GraphQlDataFetcher.DataFetcherRegistration> dataFetchers) implements Context {}
 
-    record GraphQlTransportContext(List<FederatedGraphQlTransport.GraphQlTransportRegistration> transportRegistrations) {
-
-
+    record GraphQlTransportContext(List<GraphQlRegistration.GraphQlTransportFederatedGraphQlRegistration> transportRegistrations) {
     }
 
     record RegistriesContext(TypeDefinitionContext typeDefinitionContext,

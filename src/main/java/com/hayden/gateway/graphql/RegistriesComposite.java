@@ -9,7 +9,8 @@ public record RegistriesComposite(
         TypeDefinitionRegistry typeDefinitionRegistry,
         GraphQLCodeRegistry.Builder codeRegistry,
         MimeTypeRegistry mimeTypeRegistry,
-        FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar) {
+        FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar
+) {
     public RegistriesComposite(TypeDefinitionRegistry typeDefinitionRegistry, MimeTypeRegistry mimeTypeRegistry,
                                FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar) {
         this(typeDefinitionRegistry, null, mimeTypeRegistry, federatedGraphQlTransportRegistrar);

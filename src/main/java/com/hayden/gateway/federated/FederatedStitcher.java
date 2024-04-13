@@ -17,23 +17,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FederatedStitcher {
 
-//    private final MimeTypeRegistry mimeTypeRegistry;
-//
-//    public record FederatedGraphQlRequest(String query, Map<String, Object> variables) {}
-//
-//    public Map<MimeType, List<FederatedGraphQlRequest>> toQueries(ClientRequest request) {
-//        return MapFunctions.CollectMap(
-//                        Arrays.stream(request.requests())
-//                                .flatMap(c -> mimeTypeRegistry.fromMimeType(c.type())
-//                                        .map(d -> Map.entry(
-//                                                c.type(),
-//                                                new FederatedGraphQlRequest(d.dataFetcherData().template().toQuery(c.params()), d.dataFetcherData().template().vars()))
-//                                        )
-//                                )
-//                                .collect(Collectors.collectingAndThen(
-//                                        Collectors.groupingBy(Map.Entry::getKey),
-//                                        e -> e.entrySet().stream().map(v -> Map.entry(v.getKey(), v.getValue().stream().map(Map.Entry::getValue).toList())))
-//                                )
-//                );
-//    }
+    private final MimeTypeRegistry mimeTypeRegistry;
+
+    public record FederatedGraphQlRequest(String query, Map<String, Object> variables) {}
+
+    public Map<MimeType, List<FederatedGraphQlRequest>> toQueries(ClientRequest request) {
+        return MapFunctions.CollectMap(
+                        Arrays.stream(request.requests())
+                                .flatMap(c -> mimeTypeRegistry.fromMimeType(c.type())
+                                        .map(d -> Map.entry(
+                                                c.type(),
+                                                new FederatedGraphQlRequest(d.dataFetcherData().template().toQuery(c.params()), d.dataFetcherData().template().vars()))
+                                        )
+                                )
+                                .collect(Collectors.collectingAndThen(
+                                        Collectors.groupingBy(Map.Entry::getKey),
+                                        e -> e.entrySet().stream().map(v -> Map.entry(v.getKey(), v.getValue().stream().map(Map.Entry::getValue).toList())))
+                                )
+                );
+    }
 }

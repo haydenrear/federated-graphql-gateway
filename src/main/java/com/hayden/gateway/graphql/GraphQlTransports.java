@@ -1,33 +1,33 @@
 package com.hayden.gateway.graphql;
 
-import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
-import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
-import com.hayden.graphql.models.visitor.datafed.DataFederationSources;
-import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
+import com.hayden.graphql.federated.transport.GraphQlRegistration;
 import com.hayden.graphql.models.visitor.simpletransport.GraphQlTransportModel;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * TODO: create a request for delete of schema from TypeRegistry.
- * @param serviceId the serviceId of this graph-ql service. This will be the same for deploying multiple services of
- *                  the same type.
- * @param source the GraphQlSource schema provided.
- * @param fetcherSource the source code for the params fetchers so this service id can be federated.
- */
+import java.util.Optional;
+
 @Slf4j
-public record GraphQlTransports(@Delegate GraphQlTransportModel model)
+public record GraphQlTransports(@Delegate GraphQlTransportModel model, String id, ContextCallback removeCallback)
         implements GraphQlServiceApiVisitor {
+
+    public GraphQlTransports(GraphQlTransportModel model) {
+        this(model, model.serviceId().host(), new ContextCallback());
+    }
+
+    @Override
+    public void remove() {
+        removeCallback.callback.accept(id, model.serviceId());
+    }
 
     @Override
     public void visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar, Context.RegistriesContext registriesContext) {
-        GraphQlServiceApiVisitor.super.visit(federatedGraphQlTransportRegistrar, registriesContext);
+        Optional.ofNullable(this.toTransportRegistration(this.model))
+                .ifPresent(m -> removeCallback.callback = federatedGraphQlTransportRegistrar.transport().transport().register(m));
     }
 
-    public FederatedGraphQlTransport.GraphQlRegistration toTransportRegistration(
-            DataFederationSources graphQlFetcherSource
-    ) {
+    public GraphQlRegistration toTransportRegistration(GraphQlTransportModel graphQlFetcherSource) {
         return null;
     }
 

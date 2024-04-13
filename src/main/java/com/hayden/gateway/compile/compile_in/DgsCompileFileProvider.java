@@ -2,32 +2,42 @@ package com.hayden.gateway.compile.compile_in;
 
 import com.hayden.gateway.compile.CompilerSourceWriter;
 import com.hayden.gateway.compile.JavaCompile;
+import com.hayden.utilitymodule.io.FileUtils;
 import com.hayden.utilitymodule.result.Result;
 import com.netflix.graphql.dgs.codegen.CodeGen;
 import com.netflix.graphql.dgs.codegen.CodeGenConfig;
 import com.netflix.graphql.dgs.codegen.CodeGenResult;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class DgsCompileFileProvider implements CompileFileProvider {
 
 
     private final CompilerSourceWriter sourceWriter;
 
+    @SneakyThrows
     @Override
     public Collection<CompilerSourceWriter.ToCompileFile> toCompileFiles(JavaCompile.CompileArgs sourceIn) {
-        return generateDgsToFiles(sourceIn);
+        if (!sourceIn.cleanPrevious())
+            log.error("Could not clean previous before compiling DGS.");
+        Collection<CompilerSourceWriter.ToCompileFile> gen = generateDgsToFiles(sourceIn);
+        log.info("Found {} DGS compile files.", gen.size());
+        return gen;
     }
-
 
     @NotNull
     private Collection<CompilerSourceWriter.ToCompileFile> generateDgsToFiles(JavaCompile.CompileArgs sourceIn) {

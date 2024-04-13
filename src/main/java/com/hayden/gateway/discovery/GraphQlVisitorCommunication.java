@@ -1,8 +1,10 @@
 package com.hayden.gateway.discovery;
 
+import com.hayden.graphql.federated.transport.health.HealthEvent;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
+import com.hayden.graphql.federated.wiring.ReloadIndicator;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -18,7 +21,7 @@ import java.util.concurrent.*;
 
 @Component
 @Slf4j
-public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
+public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor, ApplicationListener<HealthEvent.FailedHealthEvent> {
 
 
     private record DelayedService(String host, int discoveryPingSeconds) implements Delayed {
@@ -43,6 +46,8 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     private GraphQlServiceProvider graphQlServiceProvider;
     @Autowired
     private MimeTypeRegistry mimeTypeRegistry;
+    @Autowired
+    private ReloadIndicator reloadIndicator;
 
 
     /**
@@ -55,6 +60,10 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
 
     public boolean isServicesEmpy() {
         return services.isEmpty();
+    }
+
+    public ServiceVisitorDelegate getService(String name) {
+        return services.get(name);
     }
 
     @PostConstruct
@@ -91,6 +100,15 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     }
 
     @Override
+    public void remove() {
+    }
+
+    @Override
+    public String id() {
+        return "";
+    }
+
+    @Override
     public void visit(RegistriesComposite registries, Context.RegistriesContext context) {
         waitForInitialRegistration();
         while (!toAdd.isEmpty()) {
@@ -113,17 +131,30 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor {
     private void removeExpiredServices() {
         DelayedService poll = callServiceAgain.poll();
         while (poll != null) {
-            services.remove(poll.host);
+            removeService(poll.host);
             poll = callServiceAgain.poll();
         }
+    }
+
+    private void removeService(String host) {
+        ServiceVisitorDelegate delegate = services.get(host);
+        delegate.remove();
+        services.remove(host);
+    }
+
+    @Override
+    public void onApplicationEvent(@NotNull HealthEvent.FailedHealthEvent event) {
+        removeService(event.getSource().host());
+        this.reloadIndicator.setReload();
     }
 
     private void pushToQueue(Set<String> contains) {
         Set<String> intersected = Sets.intersect(services.keySet(), contains);
         intersected.stream()
                 .map(services::get)
-                .forEach(toAddService -> toAdd.add(toAddService));
+                .forEach(toAdd::add);
     }
+
 
 
 }

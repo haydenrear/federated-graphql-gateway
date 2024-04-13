@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
@@ -25,8 +26,17 @@ import java.util.stream.Stream;
  * @param fetcherSource the source code for the params fetchers so this service id can be federated.
  */
 @Slf4j
-public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel model)
+public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel model, String id, ContextCallback removeCallback)
         implements GraphQlServiceApiVisitor {
+
+    public GraphQlDataFetcher(GraphQlDataFetcherDiscoveryModel model) {
+        this(model, model.serviceId().host(), new ContextCallback());
+    }
+
+    @Override
+    public void remove() {
+        removeCallback.callback.accept(id, model.serviceId());
+    }
 
     @Override
     public void visit(TypeDefinitionRegistry typeDefinitionRegistry,

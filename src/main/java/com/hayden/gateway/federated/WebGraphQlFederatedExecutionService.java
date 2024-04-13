@@ -40,7 +40,7 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
 
     @PostConstruct
     public void createExecutionGraphQlService() {
-//        this.defaultExecutionService = new DefaultExecutionGraphQlService(federatedDynamicGraphQlSource);
+        this.defaultExecutionService = new DefaultExecutionGraphQlService(federatedDynamicGraphQlSource);
     }
 
     @Override
@@ -54,13 +54,24 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
         return doFederatedGraphQl(request);
     }
 
+    @Override
+    public @NotNull Mono<ExecutionGraphQlResponse> execute(@NotNull ExecutionGraphQlRequest request, boolean parsed) {
+        if (parsed) {
+            var requestData = this.requestDataParser.buildRequestData(request);
+            return doFederatedGraphQl(requestData, new ExecutionInput.Builder().build());
+        } else {
+            return this.execute(request);
+        }
+    }
+
     @NotNull
     private Mono<ExecutionGraphQlResponse> doFederatedGraphQl(ExecutionGraphQlRequest request) {
         return this.defaultExecutionService.execute(request);
     }
 
     @NotNull
-    private Mono<ExecutionGraphQlResponse> doFederatedGraphQl(FederatedRequestData requestData, ExecutionInput request) {
+    private Mono<ExecutionGraphQlResponse> doFederatedGraphQl(FederatedRequestData requestData,
+                                                              ExecutionInput request) {
         return Mono.using(
                 this::federatedClient,
                 federatedClient -> Mono.from(federatedClient.request(requestData))

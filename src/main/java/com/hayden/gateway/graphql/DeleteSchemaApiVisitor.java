@@ -9,6 +9,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel deleteModel) implements GraphQlServiceApiVisitor {
     @Override
+    public void remove() {
+
+    }
+
+    @Override
+    public String id() {
+        return deleteModel.id().host();
+    }
+
+    @Override
     public void visit(TypeDefinitionRegistry typeDefinitionRegistry,
                       Context.RegistriesContext ctx) {
         typeDefinitionRegistry.getType(deleteModel.toDelete())

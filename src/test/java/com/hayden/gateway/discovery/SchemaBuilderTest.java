@@ -3,10 +3,12 @@ package com.hayden.gateway.discovery;
 import com.hayden.gateway.GatewayApplication;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
+import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.federated.transport.FetcherGraphQlTransport;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
+import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
 import com.hayden.graphql.models.visitor.*;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
@@ -88,7 +90,7 @@ public class SchemaBuilderTest {
                 .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
                         new GraphQlDataFetcher(
                                 new GraphQlDataFetcherDiscoveryModel(
-                                        "test",
+                                        new FederatedGraphQlServiceItemId(null, "host", "fetch"),
                                         List.of(),
                                         List.of(
                                                 new DataFetcherGraphQlSource(
@@ -96,7 +98,9 @@ public class SchemaBuilderTest {
                                                         Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn", MimeType.valueOf("text/html")),
                                                                 new DataSource(GraphQlTarget.String, fetcher))
                                                 ))
-                                )
+                                ),
+                                "test",
+                                new GraphQlServiceApiVisitor.ContextCallback()
                         )
                 ))));
     }

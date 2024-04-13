@@ -6,4 +6,9 @@ import java.util.List;
 
 public record ServiceVisitorDelegate(String host,
                                      List<? extends GraphQlServiceApiVisitor> visitors) {
+
+    public void remove() {
+        this.visitors.forEach(GraphQlServiceApiVisitor::remove);
+    }
+
 }
