@@ -21,7 +21,8 @@ import java.util.concurrent.*;
 
 @Component
 @Slf4j
-public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor, ApplicationListener<HealthEvent.FailedHealthEvent> {
+public class GraphQlVisitorCommunication implements
+        GraphQlServiceApiVisitor, ApplicationListener<HealthEvent.FailedHealthEvent> {
 
 
     private record DelayedService(String host, int discoveryPingSeconds) implements Delayed {

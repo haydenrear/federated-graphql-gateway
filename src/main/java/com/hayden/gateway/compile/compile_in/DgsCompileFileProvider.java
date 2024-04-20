@@ -53,7 +53,7 @@ public class DgsCompileFileProvider implements CompileFileProvider {
 
     private void addTys(Collection<CompilerSourceWriter.ToCompileFile> out,
                         Result<Collection<CompilerSourceWriter.ToCompileFile>, Result.Error> toAdd) {
-        toAdd.map(out::addAll);
+        toAdd.ifPresent(out::addAll);
     }
 
     private Result<Collection<CompilerSourceWriter.ToCompileFile>, Result.Error> addProjections(CodeGenResult generate, JavaCompile.CompileArgs compileWriterOut) {

@@ -2,6 +2,7 @@ package com.hayden.gateway.graphql;
 
 import com.hayden.gateway.compile.DgsCompiler;
 import com.hayden.graphql.federated.transport.GraphQlRegistration;
+import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +20,13 @@ public interface Context {
     record RegistriesContext(TypeDefinitionContext typeDefinitionContext,
                              CodegenContext codegenContext,
                              MimeTypeDefinitionContext mimeTypeDefinitionContext,
-                             GraphQlTransportContext transportContext) {
-        public RegistriesContext(TypeDefinitionContext typeDefinitionContext, CodegenContext codegenContext, GraphQlTransportContext graphQlTransportContext) {
+                             GraphQlTransportContext transportContext,
+                             ApplicationContext ctx) {
+        public RegistriesContext(TypeDefinitionContext typeDefinitionContext, CodegenContext codegenContext, GraphQlTransportContext graphQlTransportContext,
+                                 ApplicationContext ctx) {
             this(typeDefinitionContext, codegenContext,
                     new MimeTypeDefinitionContext(new ArrayList<>()),
-                    graphQlTransportContext);
+                    graphQlTransportContext, ctx);
         }
     }
 }

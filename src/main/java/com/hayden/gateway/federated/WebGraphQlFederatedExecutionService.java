@@ -1,6 +1,6 @@
 package com.hayden.gateway.federated;
 
-import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilder;
+import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.response.ResponseExecutionAdapter;
 import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.client.ClientRequest;
@@ -22,18 +22,19 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
 
 
     private final RequestDataParser requestDataParser;
-    private final PooledFederatedGraphQlClient clientPool;
+    private final FederatedGraphQlClientPool clientPool;
     private final FederatedGraphQlTransportRegistrar registrar;
     private final FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
 
     private DefaultExecutionGraphQlService defaultExecutionService;
 
 
-    public FederatedGraphQlClientBuilder.FederatedGraphQlClient federatedClient() {
-        return clientPool.builder()
+    public FederatedGraphQlClientBuilderHolder.FederatedGraphQlClient federatedClient() {
+        return clientPool.client()
                 .map(f -> {
                     var transport = registrar.transport();
-                    return f.buildFederatedClient(transport);
+                    var v =  f.buildFederatedClient(transport);
+                    return v;
                 })
                 .orElse(null);
     }
@@ -79,7 +80,7 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
                                 request,
                                 ResponseExecutionAdapter.executionResult(g)
                         )),
-                FederatedGraphQlClientBuilder.FederatedGraphQlClient::close
+                FederatedGraphQlClientBuilderHolder.FederatedGraphQlClient::close
         );
     }
 

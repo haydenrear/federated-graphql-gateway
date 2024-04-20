@@ -1,18 +1,13 @@
 package com.hayden.gateway.fetcher.support;
 
-import com.hayden.gateway.discovery.GraphQlVisitorCommunication;
-import com.hayden.gateway.discovery.ServiceVisitorDelegate;
-import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.gateway.federated.WebGraphQlFederatedExecutionService;
-import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilder;
+import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.execution.DataServiceRequestExecutor;
 import com.hayden.graphql.models.dataservice.BeanContext;
 import com.hayden.graphql.models.dataservice.RemoteDataFetcher;
-import com.hayden.graphql.models.federated.request.ClientFederatedRequestItem;
-import com.hayden.graphql.models.federated.request.FederatedRequestData;
-import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
+import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.TypeResolver;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
@@ -29,10 +24,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
-public abstract class RemoteDataFetcherImpl<T> implements RemoteDataFetcher<T>, ApplicationEventPublisher {
+public abstract class RemoteDataFetcherImpl<T> implements RemoteDataFetcher<T>, ApplicationEventPublisher, ApplicationContextAware {
 
+    @Delegate
     private ApplicationContext applicationContext;
+
+    @Autowired
     private WebGraphQlFederatedExecutionService executionService;
+
+    @Override
+    @Autowired
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
     /**
      * Ability to retrieve any bean from the context.
@@ -50,12 +54,12 @@ public abstract class RemoteDataFetcherImpl<T> implements RemoteDataFetcher<T>, 
     }
 
     @Override
-    public T execute(DataFetchingEnvironment env) {
+    public Result<T, RemoteDataFetcherError> execute(DataFetchingEnvironment env) {
         return this.toResultData(
                 Flux.using(
                                 () -> executionService.federatedClient(),
                                 federatedClient -> federatedClient.request(toRequestData(env)),
-                                FederatedGraphQlClientBuilder.FederatedGraphQlClient::close
+                                FederatedGraphQlClientBuilderHolder.FederatedGraphQlClient::close
                         )
                         .log()
                         .collectList()
@@ -63,7 +67,7 @@ public abstract class RemoteDataFetcherImpl<T> implements RemoteDataFetcher<T>, 
     }
 
     @NotNull
-    private T toResultData(Mono<List<DataServiceRequestExecutor.FederatedGraphQlResponse>> t) {
+    private Result<T, RemoteDataFetcherError> toResultData(Mono<List<DataServiceRequestExecutor.FederatedGraphQlResponse>> t) {
         try {
             return t.map(this::convert)
                     .log()
@@ -72,18 +76,17 @@ public abstract class RemoteDataFetcherImpl<T> implements RemoteDataFetcher<T>, 
         } catch (InterruptedException |
                  ExecutionException e) {
             log.error("Error when attempting to get response: {}.", e.getMessage());
-            throw new RuntimeException(e);
+            return Result.fromError(new RemoteDataFetcherError(e));
         }
     }
 
-    private T convert(List<DataServiceRequestExecutor.FederatedGraphQlResponse> l) {
+    private Result<T, RemoteDataFetcherError> convert(List<DataServiceRequestExecutor.FederatedGraphQlResponse> l) {
         List<?> value = l.stream().flatMap(result -> {
             try {
-                return Stream.of(result.toResult().getData());
-            } catch (
-                    ClassCastException c) {
+                return Stream.of(Result.fromResult(result.toResult().getData()));
+            } catch (ClassCastException c) {
                 log.error("Error when converting {} with error {}.", result.toResult(), c.getMessage());
-                return Stream.empty();
+                return Stream.of(Result.fromError(new RemoteDataFetcherError(c)));
             }
         }).collect(Collectors.toList());
         return this.from(value);

@@ -13,8 +13,11 @@ import graphql.schema.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,7 +25,7 @@ import java.util.ArrayList;
 @Slf4j
 @DgsComponent
 @Component
-public class Discovery {
+public class Discovery implements ApplicationContextAware {
 
     @Autowired
     private DgsCompiler compileDgs;
@@ -36,6 +39,7 @@ public class Discovery {
     private MethodDataFetcherFactory methodDataFetcherFactory;
 
     private FederatedGraphQlTransportRegistrar transportRegistrar;
+    private ApplicationContext ctx;
 
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
@@ -67,7 +71,8 @@ public class Discovery {
                 new Context.RegistriesContext(
                         new Context.TypeDefinitionContext(),
                         codegenContext,
-                        new Context.GraphQlTransportContext(new ArrayList<>())
+                        new Context.GraphQlTransportContext(new ArrayList<>()),
+                        this.ctx
                 )
         );
         return codeRegistryBuilder;
@@ -82,10 +87,16 @@ public class Discovery {
                 new Context.RegistriesContext(
                         new Context.TypeDefinitionContext(),
                         codegenContext,
-                        new Context.GraphQlTransportContext(new ArrayList<>())
+                        new Context.GraphQlTransportContext(new ArrayList<>()),
+                        this.ctx
                 )
         );
         return this.typeDefinitionRegistry;
     }
 
+    @Override
+    @Autowired
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.ctx = applicationContext;
+    }
 }

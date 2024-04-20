@@ -5,6 +5,7 @@ import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.MapFunctions;
+import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -78,7 +79,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                         result.typeName(),
                         MapFunctions.CollectMap(
                                 result.fetchers().entrySet().stream()
-                                        .flatMap(GraphQlDataFetcher::nextDataFetcherItem)
+                                        .flatMap(f -> nextDataFetcherItem(f, context))
                         )
                 ))
                 .forEach(nextFetcher -> registerDataFetcher(codeRegistryBuilder, nextFetcher, context));
@@ -93,12 +94,15 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
     @NotNull
     private static Stream<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>> nextDataFetcherItem(
-            Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetcherItem
+            Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetcherItem,
+            Context.RegistriesContext ctx
     ) {
         try {
+            DataFetcher<?> fetcher = fetcherItem.getValue().fetcher().getConstructor().newInstance();
+            ctx.ctx().getAutowireCapableBeanFactory().autowireBean(fetcher);
             return Stream.of(Map.entry(
                     fetcherItem.getKey(),
-                    new GraphQlDataFetcherDiscoveryModel.DataFetcherData(fetcherItem.getValue().fetcher().getConstructor().newInstance(), fetcherItem.getValue().template())
+                    new GraphQlDataFetcherDiscoveryModel.DataFetcherData(fetcher, fetcherItem.getValue().template())
             ));
         } catch (InstantiationException |
                  IllegalAccessException |

@@ -1,0 +1,15 @@
+@startuml
+
+component FileDataService {
+    component EnumerateFiles
+    component SubscribeFileChangeStream
+    component GetFileCurrentState
+}
+
+component FileEventSource {
+    component LocalFileEventSource
+    component NasFileEventSource
+    component CloudFileEventSource
+}
+
+@enduml
