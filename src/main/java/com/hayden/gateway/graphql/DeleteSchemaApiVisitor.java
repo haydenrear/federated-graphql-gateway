@@ -1,6 +1,6 @@
 package com.hayden.gateway.graphql;
 
-import com.hayden.graphql.models.visitor.datafetcher.DeleteSchemaApiVisitorModel;
+import com.hayden.graphql.models.visitor.schema.DeleteSchemaApiVisitorModel;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;

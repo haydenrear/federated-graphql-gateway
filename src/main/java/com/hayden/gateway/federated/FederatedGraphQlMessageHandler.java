@@ -1,5 +1,6 @@
 package com.hayden.gateway.federated;
 
+import com.hayden.graphql.federated.FederatedExecutionGraphQlService;
 import com.hayden.graphql.models.client.ClientRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;

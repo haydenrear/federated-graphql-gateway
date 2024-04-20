@@ -1,7 +1,7 @@
 package com.hayden.gateway.discovery;
 
 import com.hayden.gateway.graphql.*;
-import com.hayden.graphql.models.visitor.datafetcher.DeleteSchemaApiVisitorModel;
+import com.hayden.graphql.models.visitor.schema.DeleteSchemaApiVisitorModel;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.graphql.models.visitor.VisitorModel;
 import lombok.extern.slf4j.Slf4j;

@@ -20,11 +20,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
- * TODO: create a request for delete of schema from TypeRegistry.
- * @param serviceId the serviceId of this graph-ql service. This will be the same for deploying multiple services of
- *                  the same type.
- * @param source the GraphQlSource schema provided.
- * @param fetcherSource the source code for the params fetchers so this service id can be federated.
+ * Add a DataFetcher to the DGS context for accessing that DataFetcher when a GraphQl query is sent to the Gateway.
  */
 @Slf4j
 public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel model, String id, ContextCallback removeCallback)

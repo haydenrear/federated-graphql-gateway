@@ -2,7 +2,7 @@ package com.hayden.gateway.compile;
 
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
-import com.hayden.graphql.models.visitor.GraphQlFederatedSchemaSource;
+import com.hayden.graphql.models.visitor.schema.GraphQlFederatedSchemaSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

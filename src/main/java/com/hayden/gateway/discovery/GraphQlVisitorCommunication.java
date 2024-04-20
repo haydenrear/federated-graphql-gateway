@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -21,9 +22,10 @@ import java.util.concurrent.*;
 
 @Component
 @Slf4j
-public class GraphQlVisitorCommunication implements
-        GraphQlServiceApiVisitor, ApplicationListener<HealthEvent.FailedHealthEvent> {
+public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor{
 
+
+    public static final String GRAPHQL_SERVICE = "GRAPHQL_SERVICE";
 
     private record DelayedService(String host, int discoveryPingSeconds) implements Delayed {
 
@@ -59,12 +61,10 @@ public class GraphQlVisitorCommunication implements
     private final Queue<ServiceVisitorDelegate> toAdd = new ConcurrentLinkedDeque<>();
     private final CountDownLatch getRegistrations = new CountDownLatch(1);
 
-    public boolean isServicesEmpy() {
-        return services.isEmpty();
-    }
-
-    public ServiceVisitorDelegate getService(String name) {
-        return services.get(name);
+    @EventListener
+    public void onApplicationEvent(@NotNull HealthEvent.FailedHealthEvent event) {
+        removeService(event.getSource().host());
+        this.reloadIndicator.setReload();
     }
 
     @PostConstruct
@@ -75,15 +75,13 @@ public class GraphQlVisitorCommunication implements
             public void run() {
                 var contains = new HashSet<String>();
                 removeExpiredServices();
-                Optional.ofNullable(discoveryClient.getInstances("GRAPHQL_SERVICE"))
+                Optional.ofNullable(discoveryClient.getInstances(GRAPHQL_SERVICE))
                         .stream()
                         .flatMap(Collection::stream)
                         .filter(s -> Objects.nonNull(s.getHost()))
                         .peek(s -> contains.add(s.getHost()))
                         .filter(s -> !services.containsKey(s.getHost()))
-                        .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost())
-                                .stream()
-                        )
+                        .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()).stream())
                         .forEach(this::putServices);
 
                 pushToQueue(contains);
@@ -99,6 +97,15 @@ public class GraphQlVisitorCommunication implements
 
         }, 0, 100);
     }
+
+    public boolean isServicesEmpy() {
+        return services.isEmpty();
+    }
+
+    public ServiceVisitorDelegate getService(String name) {
+        return services.get(name);
+    }
+
 
     @Override
     public void remove() {
@@ -143,19 +150,11 @@ public class GraphQlVisitorCommunication implements
         services.remove(host);
     }
 
-    @Override
-    public void onApplicationEvent(@NotNull HealthEvent.FailedHealthEvent event) {
-        removeService(event.getSource().host());
-        this.reloadIndicator.setReload();
-    }
-
     private void pushToQueue(Set<String> contains) {
         Set<String> intersected = Sets.intersect(services.keySet(), contains);
         intersected.stream()
                 .map(services::get)
                 .forEach(toAdd::add);
     }
-
-
 
 }

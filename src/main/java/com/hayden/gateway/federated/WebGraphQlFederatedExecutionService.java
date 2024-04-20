@@ -1,5 +1,6 @@
 package com.hayden.gateway.federated;
 
+import com.hayden.graphql.federated.FederatedExecutionGraphQlService;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.response.ResponseExecutionAdapter;
 import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
