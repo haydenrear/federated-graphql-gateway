@@ -2,7 +2,7 @@ package com.hayden.gateway.config;
 
 import com.hayden.gateway.discovery.Discovery;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
-import com.hayden.graphql.federated.transport.FederatedGraphQlTransport;
+import com.hayden.graphql.federated.transport.federated_transport.FederatedGraphQlTransport;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;

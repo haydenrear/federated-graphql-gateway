@@ -3,7 +3,7 @@ package com.hayden.gateway.federated;
 import com.hayden.graphql.federated.FederatedExecutionGraphQlService;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.response.ResponseExecutionAdapter;
-import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
+import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.client.ClientRequest;
 import com.hayden.graphql.models.federated.request.FederatedRequestData;
 import graphql.ExecutionInput;

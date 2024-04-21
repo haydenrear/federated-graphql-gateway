@@ -1,7 +1,7 @@
 package com.hayden.gateway.graphql;
 
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
-import com.hayden.graphql.federated.transport.GraphQlRegistration;
+import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import com.hayden.graphql.models.visitor.datafed.DataFederationSources;
 import com.hayden.graphql.models.visitor.datafed.GraphQlDataFederationModel;
 
@@ -31,7 +31,7 @@ public record GraphQlDataFederation(GraphQlDataFederationModel model, String id,
                       Context.RegistriesContext registriesContext) {
         var unregisters = this.model.federationSource().stream().map(this::toTransportRegistration)
                 .filter(Objects::nonNull)
-                .map(t -> federatedGraphQlTransportRegistrar.transport().transport().register(t))
+                .map(federatedGraphQlTransportRegistrar::visit)
                 .toList();
 
         removeCallback.callback = (id, serviceId) -> unregisters.forEach(c -> c.accept(id, serviceId));

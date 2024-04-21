@@ -1,7 +1,7 @@
 package com.hayden.gateway.graphql;
 
 import com.hayden.gateway.compile.DgsCompiler;
-import com.hayden.graphql.federated.transport.GraphQlRegistration;
+import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;

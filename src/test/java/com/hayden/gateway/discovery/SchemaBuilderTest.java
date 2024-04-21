@@ -1,11 +1,8 @@
 package com.hayden.gateway.discovery;
 
-import com.hayden.gateway.GatewayApplication;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
-import com.hayden.graphql.federated.transport.FederatedDynamicGraphQlSource;
-import com.hayden.graphql.federated.transport.FetcherGraphQlTransport;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
@@ -30,11 +27,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.MimeType;
 
 import java.io.File;
@@ -43,7 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;

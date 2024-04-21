@@ -1,7 +1,7 @@
 package com.hayden.gateway.federated;
 
 import com.hayden.graphql.federated.client.IFederatedGraphQlClientBuilder;
-import com.hayden.graphql.federated.transport.*;
+import com.hayden.graphql.federated.transport.federated_transport.FederatedGraphQlTransportResult;
 import com.hayden.utilitymodule.result.Result;
 import org.junit.jupiter.api.Test;
 
