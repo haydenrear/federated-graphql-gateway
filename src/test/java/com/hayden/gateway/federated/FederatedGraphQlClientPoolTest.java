@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 class FederatedGraphQlClientPoolTest {
 
     @Test
-    void client() throws Exception {
+    void client() {
         FederatedGraphQlClientPool federatedGraphQlClient = new FederatedGraphQlClientPool();
         federatedGraphQlClient.poolSize = 5;
         federatedGraphQlClient.connectTimeout = 1;

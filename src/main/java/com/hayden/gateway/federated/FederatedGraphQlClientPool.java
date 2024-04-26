@@ -38,8 +38,8 @@ public class FederatedGraphQlClientPool {
                 .forEach(i -> {
                     FederatedGraphQlClientBuilderHolder e = new FederatedGraphQlClientBuilderHolder();
                     IFederatedGraphQlClientBuilder iFederatedGraphQlClientBuilder = federatedProxyRef(e);
-                    e.setProxyRef(iFederatedGraphQlClientBuilder);
-                    this.builders.add(e);
+                    e.setSelfRef(iFederatedGraphQlClientBuilder);
+                    this.builders.add(iFederatedGraphQlClientBuilder);
                 });
     }
 
