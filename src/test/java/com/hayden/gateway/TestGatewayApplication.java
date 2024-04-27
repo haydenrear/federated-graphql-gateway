@@ -15,20 +15,20 @@ import org.testcontainers.utility.DockerImageName;
 //@TestConfiguration(proxyBeanMethods = false)
 public class TestGatewayApplication {
 
-	@Bean
-	@ServiceConnection
-	KafkaContainer kafkaContainer() {
-		return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
-	}
+//	@Bean
+//	@ServiceConnection
+//	KafkaContainer kafkaContainer() {
+//		return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
+//	}
+//
+//	@Bean
+//	@ServiceConnection
+//	PostgreSQLContainer<?> postgresContainer() {
+//		return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"));
+//	}
 
-	@Bean
-	@ServiceConnection
-	PostgreSQLContainer<?> postgresContainer() {
-		return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"));
-	}
-
-	public static void main(String[] args) {
-		SpringApplication.from(GatewayApplication::main).with(TestGatewayApplication.class).run(args);
-	}
+//	public static void main(String[] args) {
+//		SpringApplication.from(GatewayApplication::main).with(TestGatewayApplication.class).run(args);
+//	}
 
 }

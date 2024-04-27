@@ -4,6 +4,8 @@ plugins {
 	id("com.hayden.observable-app")
 	id("com.hayden.discovery-app")
 	id("com.hayden.messaging")
+	id("com.hayden.docker-compose")
+	id("com.hayden.persistence")
 }
 
 description = "gateway"

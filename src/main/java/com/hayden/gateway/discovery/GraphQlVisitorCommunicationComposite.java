@@ -1,10 +1,12 @@
 package com.hayden.gateway.discovery;
 
+import com.google.common.collect.Lists;
 import com.hayden.graphql.federated.transport.health.HealthEvent;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
+import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,6 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,7 @@ import java.util.concurrent.*;
 
 @Component
 @Slf4j
-public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor{
+public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVisitor{
 
 
     public static final String GRAPHQL_SERVICE = "GRAPHQL_SERVICE";
@@ -109,6 +110,7 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor{
 
     @Override
     public void remove() {
+        log.error("Received remove on parent visitor communication composite.");
     }
 
     @Override
@@ -117,12 +119,19 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor{
     }
 
     @Override
-    public void visit(RegistriesComposite registries, Context.RegistriesContext context) {
-        waitForInitialRegistration();
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(RegistriesComposite registries, Context.RegistriesContext context) {
+        waitForWasInitialRegistration();
+        Collection<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> results = Lists.newArrayList(Result.from(new GraphQlServiceVisitorResponse(), new GraphQlServiceVisitorError()));
         while (!toAdd.isEmpty()) {
             var s = toAdd.poll();
-            s.visitors().forEach(g -> g.visit(registries, context));
+            results.addAll(
+                    s.visitors().stream()
+                            .map(g -> g.visit(registries, context))
+                            .toList()
+            );
         }
+
+        return Result.all(results);
     }
 
      public boolean doReload() {
@@ -130,10 +139,15 @@ public class GraphQlVisitorCommunication implements GraphQlServiceApiVisitor{
     }
 
     @SneakyThrows
-    public void waitForInitialRegistration() {
+    public boolean waitForWasInitialRegistration() {
+        boolean wasCounted = getRegistrations.getCount() == 0;
+        if (wasCounted)
+            return true;
         if (!getRegistrations.await(15000, TimeUnit.MILLISECONDS)) {
             log.error("Could not wait for registration.");
         }
+
+        return false;
     }
 
     private void removeExpiredServices() {

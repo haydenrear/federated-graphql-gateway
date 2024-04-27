@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.tools.*;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public class JavaCompile {
 
     private final CompileFileProvider dgsCompileFileProvider;

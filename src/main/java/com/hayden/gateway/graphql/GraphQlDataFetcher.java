@@ -5,6 +5,7 @@ import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.MapFunctions;
+import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.SchemaParser;
@@ -36,7 +37,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
     }
 
     @Override
-    public void visit(TypeDefinitionRegistry typeDefinitionRegistry,
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(TypeDefinitionRegistry typeDefinitionRegistry,
                       Context.RegistriesContext ctx) {
         SchemaParser schemaParser = new SchemaParser();
         this.model.source()
@@ -50,6 +51,8 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                                 .forEach(typeDefinitionRegistry::merge);
                     }
                 });
+
+        return Result.fromResult(new GraphQlServiceVisitorResponse("Not implemented error"));
     }
 
     /**
@@ -65,7 +68,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
     }
 
     @Override
-    public void visit(GraphQLCodeRegistry.Builder codeRegistryBuilder,
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(GraphQLCodeRegistry.Builder codeRegistryBuilder,
                       TypeDefinitionRegistry registry,
                       Context.RegistriesContext context) {
         context.codegenContext().javaCompiler()
@@ -75,28 +78,32 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                         result.typeName(),
                         MapFunctions.CollectMap(
                                 result.fetchers().entrySet().stream()
-                                        .flatMap(f -> nextDataFetcherItem(f, context))
+                                        .flatMap(f -> nextDataFetcherItem(f, context).stream())
                         )
                 ))
                 .forEach(nextFetcher -> registerDataFetcher(codeRegistryBuilder, nextFetcher, context));
+
+        return Result.fromResult(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
     @Override
-    public void visit(MimeTypeRegistry mimeTypeRegistry, Context.RegistriesContext ctx) {
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(MimeTypeRegistry mimeTypeRegistry, Context.RegistriesContext ctx) {
         ctx.mimeTypeDefinitionContext().dataFetchers()
                 .forEach(mimeTypeRegistry::register);
+
+        return Result.fromResult(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
 
     @NotNull
-    private static Stream<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>> nextDataFetcherItem(
+    private static Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>, Result.Error> nextDataFetcherItem(
             Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetcherItem,
             Context.RegistriesContext ctx
     ) {
         try {
             DataFetcher<?> fetcher = fetcherItem.getValue().fetcher().getConstructor().newInstance();
             ctx.ctx().getAutowireCapableBeanFactory().autowireBean(fetcher);
-            return Stream.of(Map.entry(
+            return Result.fromResult(Map.entry(
                     fetcherItem.getKey(),
                     new GraphQlDataFetcherDiscoveryModel.DataFetcherData(fetcher, fetcherItem.getValue().template())
             ));
@@ -105,8 +112,8 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                  NoSuchMethodException |
                  InvocationTargetException e) {
             log.error("Error when building {}: {}.", fetcherItem.getValue().fetcher().getSimpleName(), e.getMessage());
+            return Result.fromError(e);
         }
-        return Stream.empty();
     }
 
     private void registerDataFetcher(

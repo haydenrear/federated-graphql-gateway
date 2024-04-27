@@ -4,8 +4,10 @@ import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import com.hayden.graphql.models.visitor.datafed.DataFederationSources;
 import com.hayden.graphql.models.visitor.datafed.GraphQlDataFederationModel;
+import com.hayden.utilitymodule.result.Result;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -27,14 +29,21 @@ public record GraphQlDataFederation(GraphQlDataFederationModel model, String id,
     }
 
     @Override
-    public void visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar,
-                      Context.RegistriesContext registriesContext) {
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar,
+                                                            Context.RegistriesContext registriesContext) {
         var unregisters = this.model.federationSource().stream().map(this::toTransportRegistration)
                 .filter(Objects::nonNull)
                 .map(federatedGraphQlTransportRegistrar::visit)
                 .toList();
 
         removeCallback.callback = (id, serviceId) -> unregisters.forEach(c -> c.accept(id, serviceId));
+
+        if (unregisters.isEmpty()) {
+            return Result.fromError(new GraphQlServiceVisitorError("Could not register GraphQl data federation."));
+        }
+
+        return Result.fromResult(new GraphQlServiceVisitorResponse("Successfully registered graphQl data federation.."));
+
     }
 
     public GraphQlRegistration toTransportRegistration(

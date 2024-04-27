@@ -1,5 +1,14 @@
 dgs.graphql.schema-locations: classpath:graphql/*.graphql*
 spring:
+  docker:
+    compose:
+      enabled: true
+      skip:
+        in-tests: false
+      file: src/main/docker/docker-compose.yml
+      lifecycle-management: start_only
+      readiness:
+        wait: never
   cloud:
     zookeeper:
       connect-string: localhost:2181

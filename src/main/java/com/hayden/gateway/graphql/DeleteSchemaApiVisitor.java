@@ -1,6 +1,7 @@
 package com.hayden.gateway.graphql;
 
 import com.hayden.graphql.models.visitor.schema.DeleteSchemaApiVisitorModel;
+import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;
@@ -19,22 +20,23 @@ public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel delet
     }
 
     @Override
-    public void visit(TypeDefinitionRegistry typeDefinitionRegistry,
-                      Context.RegistriesContext ctx) {
-        typeDefinitionRegistry.getType(deleteModel.toDelete())
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(TypeDefinitionRegistry typeDefinitionRegistry,
+                                                            Context.RegistriesContext ctx) {
+        return typeDefinitionRegistry.getType(deleteModel.toDelete())
                 .map(t -> {
                     typeDefinitionRegistry.remove(deleteModel.toDelete(), t);
-                    return typeDefinitionRegistry;
+                    return Result.<TypeDefinitionRegistry, GraphQlServiceVisitorError>fromResult(typeDefinitionRegistry);
                 })
                 .orElseGet(() -> {
                     log.error("Received request to delete {} but did not exist.", deleteModel);
-                    return typeDefinitionRegistry;
-                });
+                    return Result.fromError(new GraphQlServiceVisitorError("Did not exist."));
+                })
+                .flatMap(t -> Result.fromResult(new GraphQlServiceVisitorResponse("Successfully removed.")));
     }
 
     @Override
-    public void visit(GraphQLCodeRegistry.Builder codeRegistryBuilder,
+    public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(GraphQLCodeRegistry.Builder codeRegistryBuilder,
                       TypeDefinitionRegistry registry, Context.RegistriesContext ctx) {
-        // no op
+        return Result.fromResult(new GraphQlServiceVisitorResponse("Nothing to remove."));
     }
 }

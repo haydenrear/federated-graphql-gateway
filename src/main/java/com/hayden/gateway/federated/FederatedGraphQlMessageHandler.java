@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 @Component
 @Slf4j
 public class FederatedGraphQlMessageHandler extends GraphQlMessageHandler {
+
     private final FederatedExecutionGraphQlService graphQlService;
 
     public FederatedGraphQlMessageHandler(FederatedExecutionGraphQlService graphQlService) {

@@ -4,11 +4,10 @@ import com.hayden.gateway.compile.DgsCompiler;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.RegistriesComposite;
-import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
+import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
-import com.netflix.graphql.dgs.internal.method.MethodDataFetcherFactory;
 import graphql.schema.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;
@@ -17,9 +16,11 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 @Slf4j
 @DgsComponent
@@ -29,13 +30,13 @@ public class Discovery implements ApplicationContextAware {
     @Autowired
     private DgsCompiler compileDgs;
     @Autowired @Delegate
-    private GraphQlVisitorCommunication communication;
+    private GraphQlVisitorCommunicationComposite communication;
 
-    /**
-     * Can create DataFetcher from @DgsComponent
-     */
-    @Autowired
-    private MethodDataFetcherFactory methodDataFetcherFactory;
+//    /**
+//     * Can create DataFetcher from @DgsComponent
+//     */
+//    @Autowired
+//    private MethodDataFetcherFactory methodDataFetcherFactory;
 
     private FederatedGraphQlTransportRegistrar transportRegistrar;
     private ApplicationContext ctx;
@@ -43,29 +44,24 @@ public class Discovery implements ApplicationContextAware {
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
-    private final FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
+
+    @Autowired @Lazy
+    private FederatedGraphQlSourceProvider federatedDynamicGraphQlSource;
 
 
     public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar,
-                     MimeTypeRegistry mimetypeRegistry,
-                     FederatedDynamicGraphQlSource federatedDynamicGraphQlSource) {
+                     MimeTypeRegistry mimetypeRegistry) {
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
         this.codegenContext = new Context.CodegenContext(this.compileDgs);
         this.mimetypeRegistry = mimetypeRegistry;
         this.transportRegistrar = transportRegistrar;
-        this.federatedDynamicGraphQlSource = federatedDynamicGraphQlSource;
     }
 
     @DgsCodeRegistry
     public GraphQLCodeRegistry.Builder codeRegistryBuilder(GraphQLCodeRegistry.Builder codeRegistryBuilder,
                                                            TypeDefinitionRegistry registry) {
-        // if you provide the params fetcher as a proto call and then convert it into graphql at this layer, then
-        // you can use it. Because the DataFetcher is an abstraction provided by the service, so it can say anything
-        // it wants, if they can provide the code to serialize it. So the goal would be to have the Gateway be a
-        // GraphQl interface and then the services are agnostic to serialization by being able to provide their own
-        // serialization framework at runtime.
         this.federatedDynamicGraphQlSource.setReload();
-        this.communication.visit(
+        var result = this.communication.visit(
                 new RegistriesComposite(registry, codeRegistryBuilder, this.mimetypeRegistry, this.transportRegistrar),
                 new Context.RegistriesContext(
                         new Context.TypeDefinitionContext(),
@@ -74,14 +70,18 @@ public class Discovery implements ApplicationContextAware {
                         this.ctx
                 )
         );
+
+        Optional.ofNullable(result.error())
+                .ifPresent(e -> log.error("Found error when running code registry builder: {}.", e.getMessages()));
+
         return codeRegistryBuilder;
     }
 
     @DgsTypeDefinitionRegistry
     public TypeDefinitionRegistry registry() {
-        waitForInitialRegistration();
-        this.federatedDynamicGraphQlSource.setReload();
-        this.communication.visit(
+        if (waitForWasInitialRegistration())
+            this.federatedDynamicGraphQlSource.setReload();
+        var result = this.communication.visit(
                 new RegistriesComposite(this.typeDefinitionRegistry, this.mimetypeRegistry, this.transportRegistrar),
                 new Context.RegistriesContext(
                         new Context.TypeDefinitionContext(),
@@ -90,6 +90,10 @@ public class Discovery implements ApplicationContextAware {
                         this.ctx
                 )
         );
+
+        Optional.ofNullable(result.error())
+                .ifPresent(e -> log.error("Found error when running type registry: {}.", e.getMessages()));
+
         return this.typeDefinitionRegistry;
     }
 

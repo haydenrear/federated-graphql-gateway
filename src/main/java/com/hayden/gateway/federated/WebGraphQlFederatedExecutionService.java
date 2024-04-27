@@ -1,18 +1,16 @@
 package com.hayden.gateway.federated;
 
 import com.hayden.graphql.federated.FederatedExecutionGraphQlService;
+import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.response.ResponseExecutionAdapter;
-import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.client.ClientRequest;
 import com.hayden.graphql.models.federated.request.FederatedRequestData;
 import graphql.ExecutionInput;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.ExecutionGraphQlRequest;
 import org.springframework.graphql.ExecutionGraphQlResponse;
-import org.springframework.graphql.execution.DefaultExecutionGraphQlService;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -25,9 +23,8 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
     private final RequestDataParser requestDataParser;
     private final FederatedGraphQlClientPool clientPool;
     private final FederatedGraphQlTransportRegistrar registrar;
-    private final FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
+    private final FederatedGraphQlSourceProvider federatedDynamicGraphQlSource;
 
-    private DefaultExecutionGraphQlService defaultExecutionService;
 
 
     public FederatedGraphQlClientBuilderHolder.FederatedGraphQlClient federatedClient() {
@@ -40,10 +37,6 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
                 .orElse(null);
     }
 
-    @PostConstruct
-    public void createExecutionGraphQlService() {
-        this.defaultExecutionService = new DefaultExecutionGraphQlService(federatedDynamicGraphQlSource);
-    }
 
     @Override
     public Mono<ExecutionGraphQlResponse> execute(ClientRequest clientRequest) {
@@ -68,7 +61,7 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
 
     @NotNull
     private Mono<ExecutionGraphQlResponse> doFederatedGraphQl(ExecutionGraphQlRequest request) {
-        return this.defaultExecutionService.execute(request);
+        return this.federatedDynamicGraphQlSource.executionGraphQlService().execute(request);
     }
 
     @NotNull

@@ -3,6 +3,8 @@ package com.hayden.gateway.discovery;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
+import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
+import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
@@ -12,6 +14,7 @@ import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
+import graphql.GraphQL;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -24,10 +27,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.MimeType;
 
@@ -46,6 +51,9 @@ import static org.mockito.ArgumentMatchers.any;
 @ActiveProfiles("deploy-test")
 @ExtendWith(SpringExtension.class)
 @Slf4j
+@TestPropertySource(properties = {
+        "spring.main.allow-bean-definition-overriding=true"
+})
 public class SchemaBuilderTest {
 
     @MockBean
@@ -59,11 +67,15 @@ public class SchemaBuilderTest {
 
     @Mock
     private ServiceInstance serviceInstance;
+    @Autowired
+    private FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
 
     @MockBean
     GraphQlServiceProvider serviceProvider;
 
     private final CountDownLatch downLatch = new CountDownLatch(1);
+
+
 
     @SuppressWarnings("unchecked")
     @SneakyThrows
@@ -76,6 +88,7 @@ public class SchemaBuilderTest {
         var test = FileUtils.readFileToString(new File("src/main/resources/graphql/test.graphql"), Charset.defaultCharset());
         var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.java"), Charset.defaultCharset());
         mockServiceProvider(fs, test, fetcher);
+        federatedDynamicGraphQlSource.reload(true);
     }
 
     private void mockServiceProvider(String fs, String test, String fetcher) {
