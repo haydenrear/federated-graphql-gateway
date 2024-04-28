@@ -17,8 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 /**
  * Add a DataFetcher to the DGS context for accessing that DataFetcher when a GraphQl query is sent to the Gateway.
@@ -52,7 +50,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                     }
                 });
 
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Not implemented error"));
+        return Result.ok(new GraphQlServiceVisitorResponse("Not implemented error"));
     }
 
     /**
@@ -83,7 +81,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                 ))
                 .forEach(nextFetcher -> registerDataFetcher(codeRegistryBuilder, nextFetcher, context));
 
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
+        return Result.ok(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
     @Override
@@ -91,7 +89,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         ctx.mimeTypeDefinitionContext().dataFetchers()
                 .forEach(mimeTypeRegistry::register);
 
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
+        return Result.ok(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
 
@@ -103,7 +101,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         try {
             DataFetcher<?> fetcher = fetcherItem.getValue().fetcher().getConstructor().newInstance();
             ctx.ctx().getAutowireCapableBeanFactory().autowireBean(fetcher);
-            return Result.fromResult(Map.entry(
+            return Result.ok(Map.entry(
                     fetcherItem.getKey(),
                     new GraphQlDataFetcherDiscoveryModel.DataFetcherData(fetcher, fetcherItem.getValue().template())
             ));
@@ -112,7 +110,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                  NoSuchMethodException |
                  InvocationTargetException e) {
             log.error("Error when building {}: {}.", fetcherItem.getValue().fetcher().getSimpleName(), e.getMessage());
-            return Result.fromError(e);
+            return Result.err(e);
         }
     }
 

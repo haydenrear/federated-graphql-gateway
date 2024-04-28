@@ -2,8 +2,6 @@ package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
 import com.hayden.utilitymodule.result.Result;
-import com.netflix.graphql.dgs.codegen.CodeGenResult;
-import com.squareup.javapoet.JavaFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,7 +25,7 @@ public class CompilerSourceWriter {
     public <T> Result<Collection<ToCompileFile>, Result.Error> writeFiles(T generate,
                                                                           Function<T, Stream<CompileFileIn>> fileFn,
                                                                           JavaCompile.CompileArgs writeToFile) {
-        return Result.fromResult(
+        return Result.ok(
                 fileFn.apply(generate)
                         .flatMap(j -> {
                             try {

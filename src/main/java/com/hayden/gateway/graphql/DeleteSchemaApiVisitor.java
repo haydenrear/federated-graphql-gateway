@@ -25,18 +25,18 @@ public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel delet
         return typeDefinitionRegistry.getType(deleteModel.toDelete())
                 .map(t -> {
                     typeDefinitionRegistry.remove(deleteModel.toDelete(), t);
-                    return Result.<TypeDefinitionRegistry, GraphQlServiceVisitorError>fromResult(typeDefinitionRegistry);
+                    return Result.<TypeDefinitionRegistry, GraphQlServiceVisitorError>ok(typeDefinitionRegistry);
                 })
                 .orElseGet(() -> {
                     log.error("Received request to delete {} but did not exist.", deleteModel);
-                    return Result.fromError(new GraphQlServiceVisitorError("Did not exist."));
+                    return Result.err(new GraphQlServiceVisitorError("Did not exist."));
                 })
-                .flatMap(t -> Result.fromResult(new GraphQlServiceVisitorResponse("Successfully removed.")));
+                .flatMap(t -> Result.ok(new GraphQlServiceVisitorResponse("Successfully removed.")));
     }
 
     @Override
     public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(GraphQLCodeRegistry.Builder codeRegistryBuilder,
                       TypeDefinitionRegistry registry, Context.RegistriesContext ctx) {
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Nothing to remove."));
+        return Result.ok(new GraphQlServiceVisitorResponse("Nothing to remove."));
     }
 }

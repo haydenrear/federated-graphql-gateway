@@ -7,7 +7,6 @@ import com.hayden.graphql.models.visitor.datafed.GraphQlDataFederationModel;
 import com.hayden.utilitymodule.result.Result;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -39,10 +38,10 @@ public record GraphQlDataFederation(GraphQlDataFederationModel model, String id,
         removeCallback.callback = (id, serviceId) -> unregisters.forEach(c -> c.accept(id, serviceId));
 
         if (unregisters.isEmpty()) {
-            return Result.fromError(new GraphQlServiceVisitorError("Could not register GraphQl data federation."));
+            return Result.err(new GraphQlServiceVisitorError("Could not register GraphQl data federation."));
         }
 
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Successfully registered graphQl data federation.."));
+        return Result.ok(new GraphQlServiceVisitorResponse("Successfully registered graphQl data federation.."));
 
     }
 

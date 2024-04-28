@@ -15,7 +15,6 @@ import org.junit.Assert;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * The API actions are pull, as the gateway only registers schema from servers it already knows from service
@@ -90,20 +89,20 @@ public interface GraphQlServiceApiVisitor {
     }
 
     default Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(TypeDefinitionRegistry typeDefinitionRegistry, Context.RegistriesContext ctx) {
-        return Result.fromResult(new GraphQlServiceVisitorResponse("No op."));
+        return Result.ok(new GraphQlServiceVisitorResponse("No op."));
     }
 
     default Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(GraphQLCodeRegistry.Builder codeRegistryBuilder, TypeDefinitionRegistry registry, Context.RegistriesContext ctx) {
-        return Result.fromResult(new GraphQlServiceVisitorResponse("No op."));
+        return Result.ok(new GraphQlServiceVisitorResponse("No op."));
     }
 
     default Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(MimeTypeRegistry mimeTypeRegistry, Context.RegistriesContext ctx) {
-        return Result.fromResult(new GraphQlServiceVisitorResponse("No op."));
+        return Result.ok(new GraphQlServiceVisitorResponse("No op."));
     }
 
     default Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar,
                                                              Context.RegistriesContext registriesContext) {
-        return Result.fromResult(new GraphQlServiceVisitorResponse("No op."));
+        return Result.ok(new GraphQlServiceVisitorResponse("No op."));
     }
 
 }

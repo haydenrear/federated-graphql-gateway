@@ -27,7 +27,7 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, String id
         Optional.ofNullable(this.toTransportRegistration(this.model))
                 .ifPresent(m -> removeCallback.callback = federatedGraphQlTransportRegistrar.visit(m));
 
-        return Result.fromResult(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
+        return Result.ok(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
     public GraphQlRegistration toTransportRegistration(GraphQlTransportModel graphQlFetcherSource) {
