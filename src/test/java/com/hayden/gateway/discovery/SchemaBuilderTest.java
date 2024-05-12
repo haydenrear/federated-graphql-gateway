@@ -3,18 +3,16 @@ package com.hayden.gateway.discovery;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
-import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
 import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
-import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
+import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.graphql.models.visitor.*;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
-import graphql.GraphQL;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -27,7 +25,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -96,7 +93,7 @@ public class SchemaBuilderTest {
                 .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
                         new GraphQlDataFetcher(
                                 new GraphQlDataFetcherDiscoveryModel(
-                                        new FederatedGraphQlServiceItemId(null, "host", "fetch"),
+                                        new FederatedGraphQlServiceFetcherItemId(null, "host", "fetch"),
                                         List.of(),
                                         List.of(
                                                 new DataFetcherGraphQlSource(

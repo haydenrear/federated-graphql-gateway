@@ -3,7 +3,7 @@ package com.hayden.gateway.graphql;
 import com.google.common.collect.Lists;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
-import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
+import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -26,7 +26,7 @@ public interface GraphQlServiceApiVisitor {
     @AllArgsConstructor
     @NoArgsConstructor
     class ContextCallback {
-        BiConsumer<String, FederatedGraphQlServiceItemId> callback;
+        BiConsumer<String, FederatedGraphQlServiceFetcherItemId> callback;
     }
 
     record GraphQlServiceVisitorError(List<Result.Error> errors)

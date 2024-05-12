@@ -4,12 +4,10 @@ import com.hayden.graphql.federated.transport.federated_transport.FederatedGraph
 import com.hayden.graphql.federated.transport.federated_transport.FederatedGraphQlTransportResult;
 import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
-import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceItemId;
+import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 @Component
@@ -33,7 +31,7 @@ public class FederatedGraphQlTransportRegistrar {
      *
      * @param graphQlTransport
      */
-    public BiConsumer<String, FederatedGraphQlServiceItemId> visit(GraphQlRegistration graphQlTransport) {
+    public BiConsumer<String, FederatedGraphQlServiceFetcherItemId> visit(GraphQlRegistration graphQlTransport) {
         var unregister = federatedGraphQlTransport.register(graphQlTransport);
         reloadIndicator.setReload();
         return unregister;
