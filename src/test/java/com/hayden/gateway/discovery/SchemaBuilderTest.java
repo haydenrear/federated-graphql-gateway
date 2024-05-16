@@ -3,6 +3,8 @@ package com.hayden.gateway.discovery;
 import com.hayden.gateway.compile.JavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
+import com.hayden.gateway.graphql.GraphQlTransports;
+import com.hayden.graphql.federated.transport.http.HttpGraphQlTransportBuilder;
 import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
@@ -11,6 +13,8 @@ import com.hayden.graphql.models.visitor.*;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
+import com.hayden.graphql.models.visitor.schema.GraphQlFederatedSchemaSource;
+import com.hayden.graphql.models.visitor.simpletransport.GraphQlTransportModel;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import com.netflix.graphql.dgs.internal.DefaultDgsQueryExecutor;
 import lombok.SneakyThrows;
@@ -18,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.dataloader.impl.Assertions;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,10 +40,7 @@ import org.springframework.util.MimeType;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +55,9 @@ import static org.mockito.ArgumentMatchers.any;
 })
 public class SchemaBuilderTest {
 
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId id;
+    private static FederatedGraphQlServiceFetcherItemId fetcherItemId;
+    private static MimeType files;
     @MockBean
     private DiscoveryClient discoveryClient;
     @Autowired
@@ -78,34 +83,26 @@ public class SchemaBuilderTest {
     @SneakyThrows
     @BeforeEach
     public void beforeEach() {
-        var loaded = dgsJavaCompile.compileAndLoad(new JavaCompile.CompileArgs( "src/test/resources/graphql", "dgs_in"));
+        files = new MimeType("files", "*");
+        id = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(
+                files,
+                UUID.randomUUID().toString(),
+                "fetch"
+        );
+        fetcherItemId = new FederatedGraphQlServiceFetcherItemId(
+                id,
+                "fetch",
+                "localhost"
+        );
+//        var loaded = dgsJavaCompile.compileAndLoad(new JavaCompile.CompileArgs( "src/test/resources/graphql", "dgs_in"));
         Mockito.when(serviceInstance.getHost()).thenReturn("test");
         Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
-        var fs = FileUtils.readFileToString(new File("src/main/resources/graphql/any_pb.graphql"), Charset.defaultCharset());
-        var test = FileUtils.readFileToString(new File("src/main/resources/graphql/test.graphql"), Charset.defaultCharset());
+        var googleProtobuf = FileUtils.readFileToString(new File("src/main/resources/graphql/any_pb.graphql"), Charset.defaultCharset());
+        var testSchema = FileUtils.readFileToString(new File("src/main/resources/graphql/test.graphql"), Charset.defaultCharset());
         var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.java"), Charset.defaultCharset());
-        mockServiceProvider(fs, test, fetcher);
-        federatedDynamicGraphQlSource.reload(true);
-    }
+        mockServiceProvider(List.of(googleProtobuf, testSchema), fetcher);
 
-    private void mockServiceProvider(String fs, String test, String fetcher) {
-        Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
-                .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
-                        new GraphQlDataFetcher(
-                                new GraphQlDataFetcherDiscoveryModel(
-                                        new FederatedGraphQlServiceFetcherItemId(null, "host", "fetch"),
-                                        List.of(),
-                                        List.of(
-                                                new DataFetcherGraphQlSource(
-                                                        "TestIn",
-                                                        Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn", MimeType.valueOf("text/html")),
-                                                                new DataSource(GraphQlTarget.String, fetcher))
-                                                ))
-                                ),
-                                "test",
-                                new GraphQlServiceApiVisitor.ContextCallback()
-                        )
-                ))));
+        federatedDynamicGraphQlSource.reload(true);
     }
 
     @SneakyThrows
@@ -129,9 +126,52 @@ public class SchemaBuilderTest {
                 .containsKey("GoogleProtobuf_Any");
     }
 
-    private void waitUntilServices() throws InterruptedException {
-        while (discovery.isServicesEmpy())
-            Thread.sleep(30);
-        queryExecutor.execute("");
+    private void waitUntilServices() {
+        assertThat(discovery.waitForWasInitialRegistration()).isTrue();
     }
+
+
+    private void mockServiceProvider(List<String> schemas, String fetcher) {
+        Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
+                .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
+                        graphQlDataFetcher(schemas, fetcher),
+                        graphTransport()
+                ))));
+    }
+
+    private static @NotNull GraphQlDataFetcher graphQlDataFetcher(List<String> schemas, String fetcher) {
+        return new GraphQlDataFetcher(
+                new GraphQlDataFetcherDiscoveryModel(
+                        fetcherItemId,
+                        schemas.stream()
+                                .map(schemaStr -> new GraphQlFederatedSchemaSource(GraphQlTarget.String, schemaStr))
+                                .toList(),
+                        List.of(
+                                new DataFetcherGraphQlSource(
+                                        "TestIn",
+                                        Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn", files),
+                                                new DataSource(GraphQlTarget.String, fetcher))
+                                ))
+                ),
+                "test"
+        );
+    }
+
+//    private static @NotNull GraphQlDataFederation graphQlDataFederation() {
+//        return new GraphQlDataFederation(
+//                new GraphQlDataFederationModel(fetcherItemId, )
+//        );
+//    }
+
+    private static @NotNull GraphQlTransports graphTransport() {
+        return new GraphQlTransports(new GraphQlTransportModel(
+                fetcherItemId,
+                HttpGraphQlTransportBuilder.builder()
+                        .host("localhost")
+                        .port(8080)
+                        .path("/graphql")
+                        .build()
+        ));
+    }
+
 }

@@ -31,7 +31,7 @@ public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel delet
                     log.error("Received request to delete {} but did not exist.", deleteModel);
                     return Result.err(new GraphQlServiceVisitorError("Did not exist."));
                 })
-                .flatMap(t -> Result.ok(new GraphQlServiceVisitorResponse("Successfully removed.")));
+                .flatMapResult(t -> Result.ok(new GraphQlServiceVisitorResponse("Successfully removed.")));
     }
 
     @Override

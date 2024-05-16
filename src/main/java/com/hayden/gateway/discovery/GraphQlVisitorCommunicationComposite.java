@@ -121,7 +121,8 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     @Override
     public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(RegistriesComposite registries, Context.RegistriesContext context) {
         waitForWasInitialRegistration();
-        Collection<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> results = Lists.newArrayList(Result.from(new GraphQlServiceVisitorResponse(), new GraphQlServiceVisitorError()));
+        Collection<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> results
+                = Lists.newArrayList(Result.from(new GraphQlServiceVisitorResponse(), new GraphQlServiceVisitorError()));
         while (!toAdd.isEmpty()) {
             var s = toAdd.poll();
             results.addAll(

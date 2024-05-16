@@ -29,6 +29,10 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         this(model, model.serviceId().host(), new ContextCallback());
     }
 
+    public GraphQlDataFetcher(GraphQlDataFetcherDiscoveryModel model, String id) {
+        this(model, id, new ContextCallback());
+    }
+
     @Override
     public void remove() {
         removeCallback.callback.accept(id, model.serviceId());
@@ -72,6 +76,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         context.codegenContext().javaCompiler()
                 .dataFetcherClasses(this.model.fetcherSource(), this.model.source())
                 .stream()
+                .flatMap(g -> g.results().stream())
                 .map(result -> Map.entry(
                         result.typeName(),
                         MapFunctions.CollectMap(

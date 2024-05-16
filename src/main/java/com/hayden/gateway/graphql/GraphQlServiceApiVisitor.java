@@ -1,6 +1,7 @@
 package com.hayden.gateway.graphql;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
@@ -29,15 +30,15 @@ public interface GraphQlServiceApiVisitor {
         BiConsumer<String, FederatedGraphQlServiceFetcherItemId> callback;
     }
 
-    record GraphQlServiceVisitorError(List<Result.Error> errors)
+    record GraphQlServiceVisitorError(Set<Result.Error> errors)
             implements Result.AggregateError {
 
         public GraphQlServiceVisitorError(String error) {
-            this(Lists.newArrayList(Result.Error.fromMessage(error)));
+            this(Sets.newHashSet(Result.Error.fromMessage(error)));
         }
 
         public GraphQlServiceVisitorError() {
-            this(Lists.newArrayList());
+            this(Sets.newHashSet());
         }
     }
 
@@ -77,9 +78,6 @@ public interface GraphQlServiceApiVisitor {
                         .map(t -> Pair.of(b, t))
                 )
                 .map(t -> this.visit(registries.codeRegistry(), registries.typeDefinitionRegistry(), context))
-                .ifPresent(all::add);
-
-        Optional.ofNullable(registries.mimeTypeRegistry()).map(t -> this.visit(t, context))
                 .ifPresent(all::add);
 
         Optional.ofNullable(registries.mimeTypeRegistry()).map(t -> this.visit(t, context))
