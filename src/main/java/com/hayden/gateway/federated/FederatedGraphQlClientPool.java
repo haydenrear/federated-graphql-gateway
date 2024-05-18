@@ -3,7 +3,7 @@ package com.hayden.gateway.federated;
 import com.hayden.gateway.federated.pool.ConnectionTimeoutException;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.client.IFederatedGraphQlClientBuilder;
-import com.hayden.utilitymodule.result.Error;
+import com.hayden.utilitymodule.result.error.Error;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;

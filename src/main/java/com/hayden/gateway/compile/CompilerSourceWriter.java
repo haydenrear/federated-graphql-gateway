@@ -1,7 +1,8 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
-import com.hayden.utilitymodule.result.Error;
+import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,20 +23,20 @@ public class CompilerSourceWriter {
 
     public record ToCompileFile(File file, String packageName) {}
 
-    public interface CompileSourceWriterResult extends Result.AggregateResponse {
+    public interface CompileSourceWriterResult extends Responses.AggregateResponse {
         Collection<ToCompileFile> compileFiles();
     }
 
 
     public <T, R extends CompileSourceWriterResult> Result<R, Error> writeFiles(T generate,
                                                                                 Function<T, Stream<CompileFileIn>> fileFn,
-                                                                                CompileArgs writeToFile,
-                                                                                Function<Collection<ToCompileFile>, R> factory) {
+                                                                                Function<Collection<ToCompileFile>, R> factory,
+                                                                                String writePath) {
         return Result.ok(
                 factory.apply(fileFn.apply(generate)
                         .flatMap(j -> {
                             try {
-                                File nameValue = new File(writeToFile.compilerIn());
+                                File nameValue = new File(writePath);
                                 j.writeTo(nameValue);
                                 return Stream.of(new ToCompileFile(new File(nameValue.getPath(), j.name()), j.packageName()));
                             } catch (IOException e) {

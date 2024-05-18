@@ -1,7 +1,9 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
-import com.hayden.utilitymodule.result.Error;
+import com.hayden.utilitymodule.result.Agg;
+import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
@@ -48,20 +50,20 @@ public class JavaCompile {
     }
 
     public record CompileAndLoadResult<T extends CompilerSourceWriter.CompileSourceWriterResult>(List<Class<?>> classesCreated, T writerResult)
-            implements Result.AggregateResponse {
+            implements Responses.AggregateResponse {
 
         @Override
-        public void add(Result.AggregateResponse aggregateResponse) {
+        public void add(Agg aggregateResponse) {
             if (aggregateResponse instanceof CompileAndLoadResult<?> compileAndLoadResult)
                 this.classesCreated.addAll(compileAndLoadResult.classesCreated);
         }
     }
 
     public interface CompileSourceWriterProcessor<T extends CompilerSourceWriter.CompileSourceWriterResult> {
-        Result<T, Error.AggregateError> process(T t, Collection<Class<?>> clzzes);
+        Result<T, AggregateError> process(T t, Collection<Class<?>> clzzes);
     }
 
-    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Error.AggregateError> compileAndLoad(
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(
             CompileArgs args,
             @Nullable CompileSourceWriterProcessor<CompilerSourceWriter.CompileSourceWriterResult> processor
     ) {
@@ -73,7 +75,7 @@ public class JavaCompile {
                         List<Class<?>> clzzes = compileFilesClzzes(args, c);
                         var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
                                 .map(p -> p.process(c, clzzes))
-                                .orElse(Result.err(new Error.StandardAggregateError("Could not process.")));
+                                .orElse(Result.err(new AggregateError.StandardAggregateError("Could not process.")));
                         return Result.from(new CompileAndLoadResult<>(
                                         clzzes,
                                         compileSourceWriterResultAggregateErrorResult
@@ -82,14 +84,14 @@ public class JavaCompile {
                                 compileSourceWriterResultAggregateErrorResult.error()
                         );
                     })
-                    .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Error.AggregateError>err(new Error.StandardAggregateError(
+                    .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError>err(new AggregateError.StandardAggregateError(
                             "Compile result was not found from file provider.")));
         }
-        return Result.err(new Error.StandardAggregateError("No compile sources found."));
+        return Result.err(new AggregateError.StandardAggregateError("No compile sources found."));
     }
 
 
-    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Error.AggregateError> compileAndLoad(CompileArgs args) {
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(CompileArgs args) {
         return compileAndLoad(args, null);
     }
 

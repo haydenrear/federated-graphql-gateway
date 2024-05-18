@@ -5,7 +5,10 @@ import com.google.common.collect.Sets;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
-import com.hayden.utilitymodule.result.Error;
+import com.hayden.utilitymodule.result.Agg;
+import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -32,7 +35,7 @@ public interface GraphQlServiceApiVisitor {
     }
 
     record GraphQlServiceVisitorError(Set<Error> errors)
-            implements Error.AggregateError {
+            implements AggregateError {
 
         public GraphQlServiceVisitorError(String error) {
             this(Sets.newHashSet(Error.fromMessage(error)));
@@ -43,7 +46,7 @@ public interface GraphQlServiceApiVisitor {
         }
     }
 
-    record GraphQlServiceVisitorResponse(List<String> responses) implements Result.AggregateResponse {
+    record GraphQlServiceVisitorResponse(List<String> responses) implements Responses.AggregateResponse {
 
         public GraphQlServiceVisitorResponse(String response) {
             this(Lists.newArrayList(response));
@@ -54,7 +57,7 @@ public interface GraphQlServiceApiVisitor {
         }
 
         @Override
-        public void add(Result.AggregateResponse aggregateResponse) {
+        public void add(Agg aggregateResponse) {
             if (aggregateResponse instanceof GraphQlServiceVisitorResponse r) {
                 this.responses.addAll(r.responses());
             } else {

@@ -5,7 +5,7 @@ import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.MapFunctions;
-import com.hayden.utilitymodule.result.Error;
+import com.hayden.utilitymodule.result.error.Error;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLCodeRegistry;
