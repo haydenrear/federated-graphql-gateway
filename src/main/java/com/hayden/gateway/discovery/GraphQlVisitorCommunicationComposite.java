@@ -123,7 +123,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
         waitForWasInitialRegistration();
         Collection<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> results
                 = Lists.newArrayList(Result.from(new GraphQlServiceVisitorResponse(), new GraphQlServiceVisitorError()));
-        while (!toAdd.isEmpty()) {
+        while (!toAdd.isEmpty() && registries.codeRegistry() != null) {
             var s = toAdd.poll();
             results.addAll(
                     s.visitors().stream()

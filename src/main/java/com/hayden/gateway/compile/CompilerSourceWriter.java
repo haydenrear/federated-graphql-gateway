@@ -1,6 +1,7 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
+import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +22,17 @@ public class CompilerSourceWriter {
 
     public record ToCompileFile(File file, String packageName) {}
 
+    public interface CompileSourceWriterResult extends Result.AggregateResponse {
+        Collection<ToCompileFile> compileFiles();
+    }
 
-    public <T> Result<Collection<ToCompileFile>, Result.Error> writeFiles(T generate,
-                                                                          Function<T, Stream<CompileFileIn>> fileFn,
-                                                                          JavaCompile.CompileArgs writeToFile) {
+
+    public <T, R extends CompileSourceWriterResult> Result<R, Result.Error> writeFiles(T generate,
+                                                                                       Function<T, Stream<CompileFileIn>> fileFn,
+                                                                                       CompileArgs writeToFile,
+                                                                                       Function<Collection<ToCompileFile>, R> factory) {
         return Result.ok(
-                fileFn.apply(generate)
+                factory.apply(fileFn.apply(generate)
                         .flatMap(j -> {
                             try {
                                 File nameValue = new File(writeToFile.compilerIn());
@@ -37,6 +43,6 @@ public class CompilerSourceWriter {
                             }
                             return Stream.empty();
                         }).collect(Collectors.toCollection(ArrayList::new))
-                );
+                ));
     }
 }

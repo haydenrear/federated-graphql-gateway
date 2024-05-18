@@ -12,6 +12,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {JavaCompile.class, CompilerSourceWriter.class, CompilerConfig.class, DgsCompileFileProvider.class})
+@TestPropertySource(properties = {"spring.docker.compose.enabled=false"})
 @ExtendWith(SpringExtension.class)
 class JavaCompileDgsTest {
 
@@ -21,7 +22,7 @@ class JavaCompileDgsTest {
 
     @Test
     void compileAndLoad() {
-        var loaded = javaCompile.compileAndLoad(new JavaCompile.CompileArgs("src/test/resources/graphql", "dgs_in"));
+        var loaded = javaCompile.compileAndLoad(new JavaCompile.PathCompileArgs("src/test/resources/test_schemas", "dgs_in"));
         assertThat(loaded.size()).isEqualTo(51);
     }
 }

@@ -27,8 +27,6 @@ import java.util.Optional;
 @Component
 public class Discovery implements ApplicationContextAware {
 
-    @Autowired
-    private DgsCompiler compileDgs;
     @Autowired @Delegate
     private GraphQlVisitorCommunicationComposite communication;
 
@@ -44,13 +42,16 @@ public class Discovery implements ApplicationContextAware {
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
+    private final DgsCompiler compileDgs;
 
     @Autowired @Lazy
     private FederatedGraphQlSourceProvider federatedDynamicGraphQlSource;
 
 
     public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar,
-                     MimeTypeRegistry mimetypeRegistry) {
+                     MimeTypeRegistry mimetypeRegistry,
+                     DgsCompiler dgsCompiler) {
+        this.compileDgs = dgsCompiler;
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
         this.codegenContext = new Context.CodegenContext(this.compileDgs);
         this.mimetypeRegistry = mimetypeRegistry;

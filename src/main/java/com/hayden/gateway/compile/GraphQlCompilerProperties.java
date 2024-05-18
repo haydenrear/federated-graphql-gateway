@@ -12,7 +12,7 @@ import java.nio.file.Path;
 public class GraphQlCompilerProperties {
 
     private Path schemaOutput;
-
+    private Path compilerIn;
 
 
 }

@@ -1,4 +1,4 @@
-dgs.graphql.schema-locations: classpath:graphql/*.graphql*
+#dgs.graphql.schema-locations: classpath:graphql/*.graphql*
 spring:
   docker:
     compose:
@@ -17,6 +17,9 @@ spring:
     username: postgres
     password: postgres
     url: jdbc:postgresql://localhost:5432/postgres
-  graphql:
-    schema:
-      locations: classpath:graphql/*.graphql*
+#  graphql:
+#    schema:
+graphql-compiler:
+  compiler-in: dgs_in
+  schema-output: schema-in
+#      locations: classpath:graphql/*.graphql*

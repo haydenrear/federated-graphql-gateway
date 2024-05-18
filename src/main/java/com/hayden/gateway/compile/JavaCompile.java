@@ -1,7 +1,9 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
+import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.utilitymodule.io.FileUtils;
+import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,57 +31,95 @@ import java.util.stream.Stream;
 @Component
 public class JavaCompile {
 
-    private final CompileFileProvider dgsCompileFileProvider;
+    private final CompileFileProvider<? extends CompilerSourceWriter.CompileSourceWriterResult> dgsCompileFileProvider;
 
-    public record CompileArgs(String compileWriterIn, String compilerIn, @Nullable String compilerOut) {
-        public CompileArgs(String compileWriterIn, String compilerIn) {
+
+
+    public record JavaFilesCompilerArgs(DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn,
+                                        @Nullable String compilerOut) implements CompileArgs {
+
+        public JavaFilesCompilerArgs(DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn) {
             this(compileWriterIn, compilerIn, null);
         }
-
-        public Path compilerOutPath(String packageName) {
-            return Optional.ofNullable(compilerOut)
-                    .map(File::new)
-                    .orElse(new File("build/classes/java/main/%s".formatted(packageName)))
-                    .toPath();
-        }
-
-        public boolean cleanPrevious() {
-            return FileUtils.deleteFilesRecursive(Paths.get(compilerIn, "com"))
-                    && FileUtils.deleteFilesRecursive(compilerOutPath("com/netflix"));
-        }
-
     }
 
-    public List<Class<?>> compileAndLoad(CompileArgs args) {
+    public record PathCompileArgs(String compileWriterIn, String compilerIn, @Nullable String compilerOut) implements CompileArgs {
+        public PathCompileArgs(String compileWriterIn, String compilerIn) {
+            this(compileWriterIn, compilerIn, null);
+        }
+    }
+
+    public record CompileAndLoadResult<T extends CompilerSourceWriter.CompileSourceWriterResult>(List<Class<?>> classesCreated, T writerResult)
+            implements Result.AggregateResponse {
+
+        @Override
+        public void add(Result.AggregateResponse aggregateResponse) {
+            if (aggregateResponse instanceof CompileAndLoadResult<?> compileAndLoadResult)
+                this.classesCreated.addAll(compileAndLoadResult.classesCreated);
+        }
+    }
+
+    public interface CompileSourceWriterProcessor<T extends CompilerSourceWriter.CompileSourceWriterResult> {
+        Result<T, Result.AggregateError> process(T t, Collection<Class<?>> clzzes);
+    }
+
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Result.AggregateError> compileAndLoad(
+            CompileArgs args,
+            @Nullable CompileSourceWriterProcessor<CompilerSourceWriter.CompileSourceWriterResult> processor
+    ) {
         var found = dgsCompileFileProvider.toCompileFiles(args);
 
-        if (doCompilation(found.stream().map(CompilerSourceWriter.ToCompileFile::file).toList())) {
-            log.info("Starting compilation... for path {}.", args.compilerIn);
-            return found.stream()
-                    .map(CompilerSourceWriter.ToCompileFile::packageName)
-                    .distinct()
-                    .map(nextPackageName -> {
-                        String packageName = nextPackageName.replace(".", "/");
-                        var compileOutPath = getCompileOutPath(args, nextPackageName, packageName);
-                        return Pair.of(Path.of(args.compilerIn, packageName).toFile(), compileOutPath.toFile().toPath());
+        if (doCompilation(found.stream().flatMap(f -> f.compileFiles().stream()).map(CompilerSourceWriter.ToCompileFile::file).toList())) {
+            log.info("Starting compilation... for path {}.", args.compilerIn());
+            return found.map(c -> {
+                        List<Class<?>> clzzes = compileFilesClzzes(args, c);
+                        var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
+                                .map(p -> p.process(c, clzzes))
+                                .orElse(Result.err(new Result.StandardAggregateError("Could not process.")));
+                        return Result.from(new CompileAndLoadResult<>(
+                                        clzzes,
+                                        compileSourceWriterResultAggregateErrorResult
+                                                .orElse(c)
+                                ),
+                                compileSourceWriterResultAggregateErrorResult.error()
+                        );
                     })
-                    .flatMap(packageNames -> {
-                        try {
-                            return loadPackage(packageNames);
-                        } catch (MalformedURLException e) {
-                            log.error("Error loading with URL class loader with error {}.",
-                                    e.getMessage());
-                        }
-                        return Stream.empty();
-                    }).collect(Collectors.toList());
-            }
-        log.warn("Could not compile {}.", args);
-        return new ArrayList<>();
+                    .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Result.AggregateError>err(new Result.StandardAggregateError(
+                            "Compile result was not found from file provider.")));
+        }
+        return Result.err(new Result.StandardAggregateError("No compile sources found."));
+    }
+
+
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, Result.AggregateError> compileAndLoad(CompileArgs args) {
+        return compileAndLoad(args, null);
+    }
+
+    private @NotNull List<Class<?>> compileFilesClzzes(CompileArgs args, CompilerSourceWriter.CompileSourceWriterResult c) {
+        List<Class<?>> clzzes = c.compileFiles().stream()
+                .map(CompilerSourceWriter.ToCompileFile::packageName)
+                .distinct()
+                .map(nextPackageName -> {
+                    String packageName = nextPackageName.replace(".", "/");
+                    var compileOutPath = getCompileOutPath(args, nextPackageName, packageName);
+                    return Pair.of(Path.of(args.compilerIn(), packageName).toFile(), compileOutPath.toFile().toPath());
+                })
+                .flatMap(packageNames -> {
+                    try {
+                        return loadPackage(packageNames);
+                    } catch (
+                            MalformedURLException e) {
+                        log.error("Error loading with URL class loader with error {}.",
+                                e.getMessage());
+                    }
+                    return Stream.empty();
+                }).collect(Collectors.toList());
+        return clzzes;
     }
 
     @NotNull
     private static Path getCompileOutPath(CompileArgs args, String nextPackageName, String packageName) {
-        var compileOutPath = Optional.ofNullable(args.compilerOut)
+        var compileOutPath = Optional.ofNullable(args.compilerOut())
                 .map(File::new)
                 .orElse(new File("build/classes/java/main/%s".formatted(packageName)))
                 .toPath();

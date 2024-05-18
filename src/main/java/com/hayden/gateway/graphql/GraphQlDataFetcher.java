@@ -45,7 +45,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         this.model.source()
                 .forEach(sourceItem -> {
                     var schema = sourceItem.targetType();
-                    if (schema.equals(GraphQlTarget.String)) {
+                    if (schema == GraphQlTarget.String) {
                         Optional.ofNullable(sourceItem.target())
                                 .stream()
                                 .map(schemaParser::parse)

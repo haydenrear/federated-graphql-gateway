@@ -3,6 +3,7 @@ package com.hayden.gateway.config;
 import com.hayden.gateway.compile.CompilerSourceWriter;
 import com.hayden.gateway.compile.DgsCompiler;
 import com.hayden.gateway.compile.JavaCompile;
+import com.hayden.gateway.compile.compile_in.ClientCodeCompileFileProvider;
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.gateway.compile.compile_in.DgsCompileFileProvider;
 import org.checkerframework.checker.units.qual.C;
@@ -18,9 +19,9 @@ public class CompilerConfig {
         return new JavaCompile(fileProvider);
     }
 
-//    @Bean
-//    public JavaCompile clientJavaCompile() {
-//        return new JavaCompile(clientIn, clientCompilerSourceWriter);
-//    }
+    @Bean
+    public JavaCompile clientCodeJavaCompile(ClientCodeCompileFileProvider fileProvider) {
+        return new JavaCompile(fileProvider);
+    }
 
 }

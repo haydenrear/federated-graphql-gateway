@@ -97,10 +97,12 @@ public class SchemaBuilderTest {
 //        var loaded = dgsJavaCompile.compileAndLoad(new JavaCompile.CompileArgs( "src/test/resources/graphql", "dgs_in"));
         Mockito.when(serviceInstance.getHost()).thenReturn("test");
         Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
-        var googleProtobuf = FileUtils.readFileToString(new File("src/main/resources/graphql/any_pb.graphql"), Charset.defaultCharset());
-        var testSchema = FileUtils.readFileToString(new File("src/main/resources/graphql/test.graphql"), Charset.defaultCharset());
+        var googleProtobuf = FileUtils.readFileToString(new File("src/test/resources/test_schemas/any_pb.graphql"), Charset.defaultCharset());
+        var testSchema = FileUtils.readFileToString(new File("src/test/resources/test_schemas/test.graphql"), Charset.defaultCharset());
         var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.java"), Charset.defaultCharset());
         mockServiceProvider(List.of(googleProtobuf, testSchema), fetcher);
+
+        discovery.waitForWasInitialRegistration();
 
         federatedDynamicGraphQlSource.reload(true);
     }
@@ -149,8 +151,8 @@ public class SchemaBuilderTest {
                         List.of(
                                 new DataFetcherGraphQlSource(
                                         "TestIn",
-                                        Map.of(new DataFetcherSourceId(SourceType.DgsComponentJava, "testIn", files),
-                                                new DataSource(GraphQlTarget.String, fetcher))
+                                        Map.of(new DataFetcherSourceId("TestIn", SourceType.DgsComponentJava, "testIn", files),
+                                                new DataSource("TestIn", GraphQlTarget.String, fetcher))
                                 ))
                 ),
                 "test"
