@@ -23,6 +23,6 @@ class JavaCompileDgsTest {
     @Test
     void compileAndLoad() {
         var loaded = javaCompile.compileAndLoad(new JavaCompile.PathCompileArgs("src/test/resources/test_schemas", "dgs_in"));
-        assertThat(loaded.size()).isEqualTo(51);
+        assertThat(loaded.get().classesCreated().size()).isEqualTo(51);
     }
 }
