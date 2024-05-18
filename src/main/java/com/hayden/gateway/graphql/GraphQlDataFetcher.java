@@ -5,6 +5,7 @@ import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.MapFunctions;
+import com.hayden.utilitymodule.result.Error;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLCodeRegistry;
@@ -99,7 +100,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
 
     @NotNull
-    private static Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>, Result.Error> nextDataFetcherItem(
+    private static Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>, Error> nextDataFetcherItem(
             Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetcherItem,
             Context.RegistriesContext ctx
     ) {

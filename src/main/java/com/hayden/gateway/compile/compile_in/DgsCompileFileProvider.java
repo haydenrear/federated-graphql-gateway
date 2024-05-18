@@ -3,6 +3,7 @@ package com.hayden.gateway.compile.compile_in;
 import com.hayden.gateway.compile.CompileArgs;
 import com.hayden.gateway.compile.CompilerSourceWriter;
 import com.hayden.gateway.compile.JavaCompile;
+import com.hayden.utilitymodule.result.Error;
 import com.hayden.utilitymodule.result.Result;
 import com.netflix.graphql.dgs.codegen.CodeGen;
 import com.netflix.graphql.dgs.codegen.CodeGenConfig;
@@ -39,7 +40,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
 
     @SneakyThrows
     @Override
-    public Result<DgsCompileResult, Result.AggregateError> toCompileFiles(CompileArgs sourceIn) {
+    public Result<DgsCompileResult, Error.AggregateError> toCompileFiles(CompileArgs sourceIn) {
         if (sourceIn instanceof JavaCompile.PathCompileArgs pathCompileArgs) {
             if (!sourceIn.cleanPrevious())
                 log.error("Could not clean previous before compiling DGS.");
@@ -47,7 +48,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
             log.info("Found {} DGS compile files.", gen.compileFiles.size());
             return Result.ok(gen);
         } else {
-            return Result.err(new Result.StandardAggregateError("Compiler args of invalid type for Dgs compile file provider: %s."
+            return Result.err(new Error.StandardAggregateError("Compiler args of invalid type for Dgs compile file provider: %s."
                     .formatted(sourceIn.getClass().getSimpleName())));
         }
     }
@@ -65,11 +66,11 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
     }
 
     private void addTys(DgsCompileResult out,
-                        Result<DgsCompileResult, Result.Error> toAdd) {
+                        Result<DgsCompileResult, Error> toAdd) {
         toAdd.ifPresent(out::add);
     }
 
-    private Result<DgsCompileResult, Result.Error> addProjections(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, Error> addProjections(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 dgs -> dgs.getClientProjections().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -78,7 +79,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Result.Error> addConstants(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, Error> addConstants(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 dgs -> dgs.getJavaConstants().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -106,7 +107,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         return codeGen.generate();
     }
 
-    private Result<DgsCompileResult, Result.Error> addJavaDataFetchers(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, Error> addJavaDataFetchers(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaDataFetchers().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -115,7 +116,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Result.Error> addQueries(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, Error> addQueries(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaQueryTypes().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -124,7 +125,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Result.Error> addJavaDataTypes(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, Error> addJavaDataTypes(CodeGenResult generate, JavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaDataTypes().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),

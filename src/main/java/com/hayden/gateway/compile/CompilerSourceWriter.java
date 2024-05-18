@@ -1,7 +1,7 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
-import com.hayden.gateway.compile.compile_in.CompileFileProvider;
+import com.hayden.utilitymodule.result.Error;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +27,10 @@ public class CompilerSourceWriter {
     }
 
 
-    public <T, R extends CompileSourceWriterResult> Result<R, Result.Error> writeFiles(T generate,
-                                                                                       Function<T, Stream<CompileFileIn>> fileFn,
-                                                                                       CompileArgs writeToFile,
-                                                                                       Function<Collection<ToCompileFile>, R> factory) {
+    public <T, R extends CompileSourceWriterResult> Result<R, Error> writeFiles(T generate,
+                                                                                Function<T, Stream<CompileFileIn>> fileFn,
+                                                                                CompileArgs writeToFile,
+                                                                                Function<Collection<ToCompileFile>, R> factory) {
         return Result.ok(
                 factory.apply(fileFn.apply(generate)
                         .flatMap(j -> {

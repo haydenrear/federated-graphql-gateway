@@ -2,6 +2,7 @@ package com.hayden.gateway.federated;
 
 import com.hayden.graphql.federated.client.IFederatedGraphQlClientBuilder;
 import com.hayden.graphql.federated.transport.federated_transport.FederatedGraphQlTransportResult;
+import com.hayden.utilitymodule.result.Error;
 import com.hayden.utilitymodule.result.Result;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +21,7 @@ class FederatedGraphQlClientPoolTest {
         federatedGraphQlClient.createClients();
         assertThat(federatedGraphQlClient.builders.size()).isEqualTo(5);
 
-        Result<IFederatedGraphQlClientBuilder, Result.Error> builderCreated = federatedGraphQlClient.client();
+        Result<IFederatedGraphQlClientBuilder, Error> builderCreated = federatedGraphQlClient.client();
         assertThat(federatedGraphQlClient.builders.size()).isEqualTo(4);
 
         assertThat(builderCreated.isPresent()).isTrue();
