@@ -29,14 +29,15 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class JavaCompile {
+public class FlyJavaCompile {
 
     private final CompileFileProvider<? extends CompilerSourceWriter.CompileSourceWriterResult> dgsCompileFileProvider;
 
 
 
-    public record JavaFilesCompilerArgs(DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn,
-                                        @Nullable String compilerOut) implements CompileArgs {
+    public record JavaFilesCompilerArgs(
+            DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn,
+            @Nullable String compilerOut) implements CompileArgs {
 
         public JavaFilesCompilerArgs(DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn) {
             this(compileWriterIn, compilerIn, null);
@@ -191,13 +192,20 @@ public class JavaCompile {
     }
 
     private static boolean doCompilation(List<File> found) {
+        if (found.isEmpty()) {
+            return true;
+        }
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
         List<String> optionList = new ArrayList<String>();
         optionList.add("-classpath");
         optionList.add(System.getProperty("java.class.path"));
-        return doCompile(fileManager, found, compiler, diagnostics, optionList);
+        Assert.isTrue(found.stream().allMatch(f -> f.exists() && f.length() != 0), "Files to compile did not exist!");
+        var files = found.stream().map(f -> Map.entry(f.getName(), f)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1))
+                .values().stream().toList();
+
+        return doCompile(fileManager, files, compiler, diagnostics, optionList);
     }
 
     private static boolean doCompile(StandardJavaFileManager fileManager, List<File> found, JavaCompiler compiler,
@@ -210,8 +218,7 @@ public class JavaCompile {
                 optionList,
                 null,
                 compilationUnit);
-        Boolean called = task.call();
-        return called;
+        return task.call();
     }
 
 

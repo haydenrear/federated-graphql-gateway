@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @Slf4j
@@ -28,7 +29,11 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
 
     public static final String GRAPHQL_SERVICE = "GRAPHQL_SERVICE";
 
-    private record DelayedService(String host, int discoveryPingSeconds) implements Delayed {
+    private record DelayedService(String host, int discoveryPingSeconds, AtomicBoolean initialized, int initialDelay) implements Delayed {
+
+        private DelayedService(String host, int discoveryPingSeconds) {
+            this(host, discoveryPingSeconds, new AtomicBoolean(false), 15);
+        }
 
         @Override
         public int compareTo(@NotNull Delayed o) {
@@ -37,6 +42,9 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
 
         @Override
         public long getDelay(@NotNull TimeUnit unit) {
+            if (!this.initialized.getAndSet(true))
+                return unit.convert(Duration.ofSeconds(initialDelay));
+
             return unit.convert(Duration.ofSeconds(discoveryPingSeconds));
         }
 
@@ -61,6 +69,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     private final ConcurrentHashMap<String, ServiceVisitorDelegate> services = new ConcurrentHashMap<>();
     private final Queue<ServiceVisitorDelegate> toAdd = new ConcurrentLinkedDeque<>();
     private final CountDownLatch getRegistrations = new CountDownLatch(1);
+    private final CountDownLatch loadCode = new CountDownLatch(1);
 
     @EventListener
     public void onApplicationEvent(@NotNull HealthEvent.FailedHealthEvent event) {
@@ -130,6 +139,8 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                             .map(g -> g.visit(registries, context))
                             .toList()
             );
+            if (loadCode.getCount() != 0)
+                loadCode.countDown();
         }
 
         return Result.all(results);
@@ -144,11 +155,23 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
         boolean wasCounted = getRegistrations.getCount() == 0;
         if (wasCounted)
             return true;
-        if (!getRegistrations.await(15000, TimeUnit.MILLISECONDS)) {
+        if (!getRegistrations.await(45000, TimeUnit.MILLISECONDS)) {
             log.error("Could not wait for registration.");
         }
 
+
         return false;
+    }
+
+    @SneakyThrows
+    public boolean waitForAllRegistrations() {
+        waitForWasInitialRegistration();
+        if (!loadCode.await(45000, TimeUnit.MILLISECONDS)) {
+            log.error("Could not wait for registration.");
+            return false;
+        }
+
+        return true;
     }
 
     private void removeExpiredServices() {

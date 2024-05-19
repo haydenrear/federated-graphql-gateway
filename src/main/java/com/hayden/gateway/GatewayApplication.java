@@ -14,7 +14,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ImportAutoConfiguration({GraphQlAutoConfiguration.class, DgsAutoConfiguration.class})
 @EnableConfigurationProperties(GraphQlProperties.class)
-@ComponentScan(basePackageClasses = {GraphQlTarget.class, FederatedExecutionGraphQlService.class, GatewayApplication.class})
+@ComponentScan(basePackages = {"com.hayden.graphql", "com.hayden.gateway"})
 public class GatewayApplication {
 
 	public static void main(String[] args) {

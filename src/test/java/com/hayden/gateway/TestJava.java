@@ -1,13 +1,9 @@
 package com.hayden.gateway;
 
 import com.hayden.graphql.federated.client.IFederatedGraphQlClientBuilder;
-import com.mongodb.assertions.Assertions;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.FileOutputStream;
 import java.lang.reflect.Proxy;
@@ -36,5 +32,6 @@ public class TestJava {
         if (close instanceof AutoCloseable c)
             c.close();
     }
+
 
 }

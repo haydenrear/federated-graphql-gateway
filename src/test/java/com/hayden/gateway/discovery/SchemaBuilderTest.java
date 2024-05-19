@@ -1,8 +1,7 @@
 package com.hayden.gateway.discovery;
 
-import com.hayden.gateway.compile.JavaCompile;
+import com.hayden.gateway.compile.FlyJavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
-import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.GraphQlTransports;
 import com.hayden.graphql.federated.transport.http.HttpGraphQlTransportBuilder;
 import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSource;
@@ -40,6 +39,8 @@ import org.springframework.util.MimeType;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
@@ -47,12 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
-@ActiveProfiles("deploy-test")
 @ExtendWith(SpringExtension.class)
 @Slf4j
-@TestPropertySource(properties = {
-        "spring.main.allow-bean-definition-overriding=true"
-})
+@ActiveProfiles("deploy-test")
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class SchemaBuilderTest {
 
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId id;
@@ -61,7 +60,7 @@ public class SchemaBuilderTest {
     @MockBean
     private DiscoveryClient discoveryClient;
     @Autowired
-    private JavaCompile dgsJavaCompile;
+    private FlyJavaCompile dgsFlyCompileJava;
     @Autowired
     private DgsQueryExecutor queryExecutor;
     @Autowired
@@ -83,6 +82,11 @@ public class SchemaBuilderTest {
     @SneakyThrows
     @BeforeEach
     public void beforeEach() {
+        com.hayden.utilitymodule.io.FileUtils.deleteFilesRecursive(Paths.get("dgs_in/com"));
+        Path path = Paths.get("schema-in");
+        com.hayden.utilitymodule.io.FileUtils.deleteFilesRecursive(path);
+        path.toFile().mkdir();
+        com.hayden.utilitymodule.io.FileUtils.deleteFilesRecursive(Paths.get("build/classes/java/main/com/netflix"));
         files = new MimeType("files", "*");
         id = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(
                 files,
@@ -94,7 +98,6 @@ public class SchemaBuilderTest {
                 "fetch",
                 "localhost"
         );
-//        var loaded = dgsJavaCompile.compileAndLoad(new JavaCompile.CompileArgs( "src/test/resources/graphql", "dgs_in"));
         Mockito.when(serviceInstance.getHost()).thenReturn("test");
         Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
         var googleProtobuf = FileUtils.readFileToString(new File("src/test/resources/test_schemas/any_pb.graphql"), Charset.defaultCharset());
@@ -102,7 +105,7 @@ public class SchemaBuilderTest {
         var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDataFetcher.java"), Charset.defaultCharset());
         mockServiceProvider(List.of(googleProtobuf, testSchema), fetcher);
 
-        discovery.waitForWasInitialRegistration();
+        discovery.waitForAllRegistrations();
 
         federatedDynamicGraphQlSource.reload(true);
     }
@@ -118,7 +121,7 @@ public class SchemaBuilderTest {
         log.info("Mutation result: {}", mutation);
 
         @Language("GraphQL") String query = """
-        { testIn { testInValue } }
+        { testInArr { testInValue } }
         """;
         out = queryExecutor.execute(query);
         Assertions.nonNull(out.getData());

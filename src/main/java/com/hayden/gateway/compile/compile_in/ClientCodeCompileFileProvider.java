@@ -2,12 +2,11 @@ package com.hayden.gateway.compile.compile_in;
 
 import com.hayden.gateway.compile.CompileArgs;
 import com.hayden.gateway.compile.CompilerSourceWriter;
-import com.hayden.gateway.compile.JavaCompile;
+import com.hayden.gateway.compile.FlyJavaCompile;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
-import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,7 +21,7 @@ public class ClientCodeCompileFileProvider implements CompileFileProvider<Client
 
     @Override
     public Result<ClientCodeCompileProvider, AggregateError> toCompileFiles(CompileArgs sourceIn) {
-        if (sourceIn instanceof JavaCompile.JavaFilesCompilerArgs javaFilesCompilerArgs) {
+        if (sourceIn instanceof FlyJavaCompile.JavaFilesCompilerArgs javaFilesCompilerArgs) {
             var paths = javaFilesCompilerArgs.compileWriterIn().source().stream()
                     .flatMap(w -> w.results().stream().map(p -> Map.entry(w.dataSource().sourceMetadata().packageName(), p)))
                     .map(p -> new CompilerSourceWriter.ToCompileFile(p.getValue().file(), p.getKey()))

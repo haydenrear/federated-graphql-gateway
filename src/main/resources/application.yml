@@ -22,4 +22,6 @@ spring:
 graphql-compiler:
   compiler-in: dgs_in
   schema-output: schema-in
+discovery:
+  discovery-ping-seconds: 30
 #      locations: classpath:graphql/*.graphql*

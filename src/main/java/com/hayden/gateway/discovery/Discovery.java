@@ -53,7 +53,7 @@ public class Discovery implements ApplicationContextAware {
                      DgsCompiler dgsCompiler) {
         this.compileDgs = dgsCompiler;
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
-        this.codegenContext = new Context.CodegenContext(this.compileDgs);
+        this.codegenContext = new Context.CodegenContext(dgsCompiler);
         this.mimetypeRegistry = mimetypeRegistry;
         this.transportRegistrar = transportRegistrar;
     }

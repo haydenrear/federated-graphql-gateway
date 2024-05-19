@@ -20,7 +20,7 @@ import com.hayden.utilitymodule.result.map.ResultCollectors;
 import com.hayden.utilitymodule.result.res.Responses;
 import graphql.schema.DataFetcher;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -36,13 +36,13 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class DgsCompiler {
 
-    private final ClientCodeCompileFileProvider clientCodeCompileFileProvider;
+
     @Value("${dgs.compile-writer.out:dgs-in}")
     private String dgsCompilerIn;
 
     private final GraphQlCompilerProperties graphQlCompilerProperties;
-    private final JavaCompile dgsJavaCompile;
-    private final JavaCompile clientCodeJavaCompile;
+    private final FlyJavaCompile dgsFlyCompileJava;
+    private final FlyJavaCompile clientFlyClientCompileJava;
     private final CompilerSourceWriter compileSourceWriterResult;
 
     public record GraphQlFetcherSourceResult(String typeName, Map<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetchers) {}
@@ -85,11 +85,11 @@ public class DgsCompiler {
     }
 
     public record GraphQlFetcherFetcherClassesResult(List<GraphQlFetcherSourceResult> results,
-                                                     JavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> compileLoadResult,
-                                                     JavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult)
+                                                     FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> compileLoadResult,
+                                                     FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult)
             implements Responses.AggregateResponse {
 
-        public GraphQlFetcherFetcherClassesResult(JavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult) {
+        public GraphQlFetcherFetcherClassesResult(FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult) {
             this(new ArrayList<>(), null, dataFetcherCompileLoadResult);
         }
 
@@ -156,9 +156,9 @@ public class DgsCompiler {
                     return writeToLocal(outputPath, nextGraphQlSchema.targetType(), nextGraphQlSchema.target());
                 })
                 .collect(ResultCollectors.from(new GraphQlModelWriteResult(), new GraphQlFetcherFetcherClassesError()))
-                .map(_ -> {
-                    var loaded = dgsJavaCompile.compileAndLoad(
-                            new JavaCompile.PathCompileArgs(
+                .map(ignored -> {
+                    var loaded = dgsFlyCompileJava.compileAndLoad(
+                            new FlyJavaCompile.PathCompileArgs(
                                     graphQlCompilerProperties.getSchemaOutput().toString(),
                                     graphQlCompilerProperties.getCompilerIn().toString()
                             ));
@@ -166,7 +166,7 @@ public class DgsCompiler {
                                     ? Result.ok(r)
                                     : Result.err(new GraphQlFetcherFetcherClassesError(Error.fromMessage("Did not recognize compile result.")))
                             )
-                            .flatMapResult(_ -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.get())))
+                            .flatMapResult(ig -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.get())))
                             .orElseThrow(() -> new NotImplementedException("No other introspection implemented at this time, besides DGS, for schema!"));
                 });
     }
@@ -186,11 +186,11 @@ public class DgsCompiler {
                 .collect(ResultCollectors.from(new GraphQlFetcherFetcherClassesResult(), new GraphQlFetcherFetcherClassesError()));
     }
 
-    private Result<JavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(
+    private Result<FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(
             GraphQlDataFetcherAggregateWriteResult writeResult
     ) {
-        return clientCodeJavaCompile.compileAndLoad(
-                new JavaCompile.JavaFilesCompilerArgs(
+        return clientFlyClientCompileJava.compileAndLoad(
+                new FlyJavaCompile.JavaFilesCompilerArgs(
                         writeResult,
                         graphQlCompilerProperties.getCompilerIn().toString()
                 ),
@@ -296,7 +296,7 @@ public class DgsCompiler {
         }
     }
 
-    private static Result<GraphQlFetcherFetcherClassesResult, GraphQlFetcherFetcherClassesError> collectToFetcher(DataFetcherGraphQlSource dataFetcherGraphQlSource, JavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> r) {
+    private static Result<GraphQlFetcherFetcherClassesResult, GraphQlFetcherFetcherClassesError> collectToFetcher(DataFetcherGraphQlSource dataFetcherGraphQlSource, FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> r) {
         if (r.writerResult() instanceof ClientCodeCompileFileProvider.ClientCodeCompileProvider clientCodeCompileProvider)
             return Result.ok(new GraphQlFetcherFetcherClassesResult(
                     new GraphQlFetcherSourceResult(
