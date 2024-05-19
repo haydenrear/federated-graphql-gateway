@@ -1,6 +1,5 @@
 package com.hayden.gateway.discovery;
 
-import com.hayden.gateway.codegen.types.TestIn;
 import com.hayden.gateway.compile.FlyJavaCompile;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlTransports;
@@ -46,6 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -125,22 +125,28 @@ public class SchemaBuilderTest {
     @Test
     public void testCompileLoadFetch() {
 
-        @Language("GraphQL") String testInQuery = "{ testIn { testInValue } }";
-        ExecutionResult execute = queryExecutor.execute(testInQuery);
-        assertThat(((DefaultDgsQueryExecutor) queryExecutor).getSchema().get().getTypeMap())
-                .containsKey("GoogleProtobuf_Any");
 
         @Language("GraphQL") String mutation = """
         mutation { addTestIn( inValue: 1 ) {  testInValue } }
         """;
+
         var out = queryExecutor.execute(mutation);
+        @Language("GraphQL") String testInQuery = "{ testIn { testInValue } }";
+        assertThat(((DefaultDgsQueryExecutor) queryExecutor).getSchema().get().getTypeMap())
+                .containsKey("GoogleProtobuf_Any");
+
         Assertions.nonNull(out.getData());
+        doValidate(testInQuery);
+    }
+
+    private void doValidate(@Language("GraphQL") String testInQuery) {
+        ExecutionResult execute = queryExecutor.execute(testInQuery);
         Map<String, Map> data = execute.getData();
         assertThat(data.get("testIn").get("testInValue")).isEqualTo(1);
-        log.info("Query result: {}", out);
     }
 
     private void mockServiceProvider(List<String> schemas, String fetcher) {
+        AtomicBoolean atomicBoolean = new AtomicBoolean(true);
         Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
                 .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
                         graphQlDataFetcher(schemas, fetcher),

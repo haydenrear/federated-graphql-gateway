@@ -27,35 +27,34 @@ import java.util.Optional;
 @Component
 public class Discovery implements ApplicationContextAware {
 
-    @Autowired @Delegate
-    private GraphQlVisitorCommunicationComposite communication;
 
-//    /**
-//     * Can create DataFetcher from @DgsComponent
-//     */
-//    @Autowired
-//    private MethodDataFetcherFactory methodDataFetcherFactory;
-
-    private FederatedGraphQlTransportRegistrar transportRegistrar;
     private ApplicationContext ctx;
 
+    @Delegate
+    private final GraphQlVisitorCommunicationComposite communication;
+
+    private final FederatedGraphQlTransportRegistrar transportRegistrar;
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
-    private final DgsCompiler compileDgs;
 
-    @Autowired @Lazy
     private FederatedGraphQlSourceProvider federatedDynamicGraphQlSource;
 
 
     public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar,
                      MimeTypeRegistry mimetypeRegistry,
-                     DgsCompiler dgsCompiler) {
-        this.compileDgs = dgsCompiler;
+                     DgsCompiler dgsCompiler,
+                     GraphQlVisitorCommunicationComposite communication) {
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
         this.codegenContext = new Context.CodegenContext(dgsCompiler);
         this.mimetypeRegistry = mimetypeRegistry;
         this.transportRegistrar = transportRegistrar;
+        this.communication = communication;
+    }
+
+    @Autowired @Lazy
+    public void setFederatedDynamicGraphQlSource(FederatedGraphQlSourceProvider federatedDynamicGraphQlSource) {
+        this.federatedDynamicGraphQlSource = federatedDynamicGraphQlSource;
     }
 
     @DgsCodeRegistry
@@ -80,8 +79,7 @@ public class Discovery implements ApplicationContextAware {
 
     @DgsTypeDefinitionRegistry
     public TypeDefinitionRegistry registry() {
-        if (waitForWasInitialRegistration())
-            this.federatedDynamicGraphQlSource.setReload();
+        this.federatedDynamicGraphQlSource.setReload();
         var result = this.communication.visit(
                 new RegistriesComposite(this.typeDefinitionRegistry, this.mimetypeRegistry, this.transportRegistrar),
                 new Context.RegistriesContext(

@@ -88,7 +88,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
             }
 
 
-        }, 0, 1000);
+        }, 0, 20000);
     }
 
     void runDiscoveryInner() {
@@ -100,6 +100,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                 .filter(s -> Objects.nonNull(s.getHost()))
                 .peek(s -> contains.add(s.getHost()))
                 .filter(s -> !services.containsKey(s.getHost()))
+                // TODO: if currently exists, send a hash of the previous and have the service validate it with ping pong
                 .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()).stream())
                 .forEach(this::putServices);
 
@@ -110,6 +111,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     }
 
     void putServices(ServiceVisitorDelegate service) {
+        // TODO: invalidateCurrent implemented as a check to see if currently exists and if so, call remove.
         services.put(service.host(), service);
         callServiceAgain.add(new DelayedService(service.host(), discoveryProperties.getDiscoveryPingSeconds()));
     }
@@ -147,8 +149,8 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                             .map(g -> g.visit(registries, context))
                             .collect(ResultCollectors.from(
                                     new GraphQlServiceVisitorResponse(),
-                                    new GraphQlServiceVisitorError())
-                            )
+                                    new GraphQlServiceVisitorError()
+                            ))
             );
 
             if (loadCode.getCount() != 0)
