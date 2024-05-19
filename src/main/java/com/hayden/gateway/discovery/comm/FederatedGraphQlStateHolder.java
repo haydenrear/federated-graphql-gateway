@@ -70,7 +70,6 @@ public class FederatedGraphQlStateHolder {
 
     @SneakyThrows
     private static boolean awaitLatch(CountDownLatch countDownLatch) {
-        Assert.isTrue(!lock.isLocked(), "Lock was locked while awaiting latches. Latches only counted down while lock locked from other thread!");
         return countDownLatch.await(15000, TimeUnit.SECONDS);
     }
 
