@@ -36,4 +36,8 @@ public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel delet
         return Result.ok(new GraphQlServiceVisitorResponse("Nothing to remove."));
     }
 
+    @Override
+    public boolean isReloadable() {
+        return false;
+    }
 }

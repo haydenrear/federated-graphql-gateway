@@ -139,6 +139,11 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
     }
 
+    @Override
+    public boolean isReloadable() {
+        return true;
+    }
+
     public record DataFetcherRegistration(
             DataFetcherSourceId id,
             GraphQlDataFetcherDiscoveryModel.DataFetcherData dataFetcherData

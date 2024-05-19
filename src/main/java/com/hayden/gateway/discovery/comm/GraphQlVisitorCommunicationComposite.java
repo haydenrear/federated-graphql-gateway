@@ -109,4 +109,9 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     public MessageDigestBytes digest() {
         throw new NotImplementedException("Composite is leaky...");
     }
+
+    @Override
+    public boolean isReloadable() {
+        throw new NotImplementedException("Composite is leaky...");
+    }
 }

@@ -35,11 +35,18 @@ public class FederatedGraphQlStateHolder {
 
     public boolean doReload() {
         lock.lock();
-        return appState.get() instanceof FederatedGraphQlState.PostStartup postStartup &&
-                postStartup.serviceDelegates().values().stream()
-                        .onClose(lock::unlock)
-                        .flatMap(s -> s.visitors().values().stream())
-                        .anyMatch(s -> !s.registered().get());
+        if (!(appState.get() instanceof FederatedGraphQlState.PostStartup postStartup))
+            return false;
+        boolean anyReload = postStartup.serviceDelegates().values().stream()
+                .flatMap(s -> s.visitors().values().stream())
+                .anyMatch(s -> !s.registered().get());
+        if (anyReload)
+            postStartup.serviceDelegates().values().stream()
+                .flatMap(s -> s.visitors().values().stream())
+                .filter(ServiceVisitorDelegate.ServiceVisitor::isReloadable)
+                .forEach(s -> s.registered().set(false));
+        lock.unlock();
+        return anyReload;
     }
 
     public Stream<ServiceVisitorDelegate.ServiceVisitor> current() {

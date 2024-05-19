@@ -35,4 +35,8 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDi
         return null;
     }
 
+    @Override
+    public boolean isReloadable() {
+        return false;
+    }
 }
