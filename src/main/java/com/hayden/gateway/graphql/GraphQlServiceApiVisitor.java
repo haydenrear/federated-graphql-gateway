@@ -5,6 +5,10 @@ import com.google.common.collect.Sets;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
+import com.hayden.graphql.models.visitor.model.Digest;
+import com.hayden.graphql.models.visitor.model.Id;
+import com.hayden.graphql.models.visitor.model.Invalidatable;
+import com.hayden.graphql.models.visitor.model.Removable;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
 import com.hayden.utilitymodule.result.error.Error;
@@ -25,7 +29,7 @@ import java.util.function.BiConsumer;
  * The API actions are pull, as the gateway only registers schema from servers it already knows from service
  * discovery, and so there are different types of actions for the Type and Fetcher.
  */
-public interface GraphQlServiceApiVisitor {
+public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, Digest {
 
     @Data
     @AllArgsConstructor
@@ -66,9 +70,6 @@ public interface GraphQlServiceApiVisitor {
         }
     }
 
-    void remove();
-
-    String id();
 
     default Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(RegistriesComposite registries, Context.RegistriesContext context) {
         List<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> all = new ArrayList<>();

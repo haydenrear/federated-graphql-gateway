@@ -6,7 +6,7 @@ import com.hayden.gateway.compile.compile_in.ClientCodeCompileFileProvider;
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
 import com.hayden.gateway.compile.compile_in.DgsCompileFileProvider;
 import com.hayden.graphql.models.GraphQlTarget;
-import com.hayden.graphql.models.visitor.DataSource;
+import com.hayden.graphql.models.visitor.model.DataSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.graphql.models.visitor.schema.GraphQlFederatedSchemaSource;

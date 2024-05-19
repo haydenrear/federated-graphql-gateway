@@ -1,0 +1,11 @@
+@startuml
+
+component ServiceState
+'Discovery calls the services, they respond with the visitors.
+
+
+'Startup
+
+
+
+@enduml

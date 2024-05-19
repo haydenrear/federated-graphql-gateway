@@ -8,15 +8,11 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel deleteModel) implements GraphQlServiceApiVisitor {
-    @Override
-    public void remove() {
-
-    }
+public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel deleteModel, MessageDigestBytes digest) implements GraphQlServiceApiVisitor {
 
     @Override
-    public String id() {
-        return deleteModel.id().host();
+    public boolean remove() {
+        return true;
     }
 
     @Override
@@ -39,4 +35,5 @@ public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel delet
                       TypeDefinitionRegistry registry, Context.RegistriesContext ctx) {
         return Result.ok(new GraphQlServiceVisitorResponse("Nothing to remove."));
     }
+
 }

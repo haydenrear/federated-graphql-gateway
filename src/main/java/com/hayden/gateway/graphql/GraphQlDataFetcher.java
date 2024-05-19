@@ -24,20 +24,17 @@ import java.util.Optional;
  * Add a DataFetcher to the DGS context for accessing that DataFetcher when a GraphQl query is sent to the Gateway.
  */
 @Slf4j
-public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel model, String id, ContextCallback removeCallback)
+public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel model, MessageDigestBytes digest, ContextCallback removeCallback)
         implements GraphQlServiceApiVisitor {
 
-    public GraphQlDataFetcher(GraphQlDataFetcherDiscoveryModel model) {
-        this(model, model.serviceId().host(), new ContextCallback());
-    }
-
-    public GraphQlDataFetcher(GraphQlDataFetcherDiscoveryModel model, String id) {
-        this(model, id, new ContextCallback());
+    public GraphQlDataFetcher(GraphQlDataFetcherDiscoveryModel model, MessageDigestBytes digest) {
+        this(model, digest, new ContextCallback());
     }
 
     @Override
-    public void remove() {
-        removeCallback.callback.accept(id, model.serviceId());
+    public boolean remove() {
+        removeCallback.callback.accept(id().host().host(), model.serviceId());
+        return true;
     }
 
     @Override

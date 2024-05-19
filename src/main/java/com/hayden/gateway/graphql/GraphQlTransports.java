@@ -10,16 +10,17 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
 
 @Slf4j
-public record GraphQlTransports(@Delegate GraphQlTransportModel model, String id, ContextCallback removeCallback)
+public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDigestBytes digest, ContextCallback removeCallback)
         implements GraphQlServiceApiVisitor {
 
-    public GraphQlTransports(GraphQlTransportModel model) {
-        this(model, model.serviceId().host(), new ContextCallback());
+    public GraphQlTransports(GraphQlTransportModel model, MessageDigestBytes digest) {
+        this(model, digest, new ContextCallback());
     }
 
     @Override
-    public void remove() {
-        removeCallback.callback.accept(id, model.serviceId());
+    public boolean remove() {
+        removeCallback.callback.accept(id().host().host(), model.serviceId());
+        return true;
     }
 
     @Override

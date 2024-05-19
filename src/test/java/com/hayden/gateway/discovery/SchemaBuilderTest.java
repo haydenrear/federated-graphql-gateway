@@ -1,6 +1,10 @@
 package com.hayden.gateway.discovery;
 
 import com.hayden.gateway.compile.FlyJavaCompile;
+import com.hayden.gateway.discovery.comm.DelayedService;
+import com.hayden.gateway.discovery.comm.GraphQlServiceProvider;
+import com.hayden.gateway.discovery.comm.GraphQlVisitorCommunicationComposite;
+import com.hayden.gateway.discovery.comm.ServiceVisitorDelegate;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlTransports;
 import com.hayden.graphql.federated.transport.http.HttpGraphQlTransportBuilder;
@@ -8,10 +12,11 @@ import com.hayden.graphql.federated.transport.source.FederatedDynamicGraphQlSour
 import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.SourceType;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
-import com.hayden.graphql.models.visitor.*;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
+import com.hayden.graphql.models.visitor.model.DataSource;
+import com.hayden.graphql.models.visitor.model.Digest;
 import com.hayden.graphql.models.visitor.schema.GraphQlFederatedSchemaSource;
 import com.hayden.graphql.models.visitor.simpletransport.GraphQlTransportModel;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
@@ -43,9 +48,8 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,8 +83,22 @@ public class SchemaBuilderTest {
     @MockBean
     GraphQlServiceProvider serviceProvider;
 
-    private final CountDownLatch downLatch = new CountDownLatch(1);
 
+
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId serviceId;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId serviceInstanceId;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId federated;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost host = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost("localhost");
+
+    static {
+        files = new MimeType("files", "*");
+        serviceId
+                = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId("fetch");
+        federated
+                = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(files, "fetch", serviceId);
+        serviceInstanceId
+                = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId(serviceId, host);
+    }
 
 
     @SuppressWarnings("unchecked")
@@ -92,17 +110,16 @@ public class SchemaBuilderTest {
         com.hayden.utilitymodule.io.FileUtils.deleteFilesRecursive(path);
         path.toFile().mkdir();
         com.hayden.utilitymodule.io.FileUtils.deleteFilesRecursive(Paths.get("build/classes/java/main/com/netflix"));
-        files = new MimeType("files", "*");
         id = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(
                 files,
                 UUID.randomUUID().toString(),
-                "fetch"
+                serviceId
         );
         fetcherItemId = new FederatedGraphQlServiceFetcherItemId(
                 id,
-                "fetch",
-                "localhost"
+                serviceInstanceId
         );
+
         Mockito.when(serviceInstance.getHost()).thenReturn("test");
         Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
 
@@ -113,11 +130,11 @@ public class SchemaBuilderTest {
         mockServiceProvider(List.of(googleProtobuf, testSchema), fetcher);
 
 
-        discovery.waitForWasInitialRegistration();
+        assertThat(discovery.waitForWasInitialRegistration()).isTrue();
 
         federatedDynamicGraphQlSource.reload(true);
         ReflectionTestUtils.invokeMethod(visitorCommunicationComposite, "runDiscoveryInner");
-        discovery.waitForWasInitialRegistration();
+        queryExecutor.execute("");
         assertThat(queryExecutor).isInstanceOf(DefaultDgsQueryExecutor.class);
     }
 
@@ -145,13 +162,24 @@ public class SchemaBuilderTest {
         assertThat(data.get("testIn").get("testInValue")).isEqualTo(1);
     }
 
+    @SneakyThrows
     private void mockServiceProvider(List<String> schemas, String fetcher) {
-        AtomicBoolean atomicBoolean = new AtomicBoolean(true);
         Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
-                .thenReturn(Optional.of(new ServiceVisitorDelegate("test", List.of(
-                        graphQlDataFetcher(schemas, fetcher),
-                        graphTransport()
-                ))));
+                .thenReturn(Optional.of(
+                        new ServiceVisitorDelegate(serviceInstanceId,
+                                Map.of(
+                                        GraphQlDataFetcher.class, new ServiceVisitorDelegate.ServiceVisitor(graphQlDataFetcher(schemas, fetcher)),
+                                        GraphQlTransports.class, new ServiceVisitorDelegate.ServiceVisitor(graphTransport())
+                                ),
+                                new DelayedService(serviceInstanceId, 100),
+                                createDigest("hello")
+                        ))
+                );
+    }
+
+    @SneakyThrows
+    private static Digest.MessageDigestBytes createDigest(String hello) {
+        return new Digest.MessageDigestBytes(MessageDigest.getInstance("MD5").digest(hello.getBytes()));
     }
 
     private static @NotNull GraphQlDataFetcher graphQlDataFetcher(List<String> schemas, String fetcher) {
@@ -166,21 +194,26 @@ public class SchemaBuilderTest {
                                         "TestInDatafetcher",
                                         Map.of(new DataFetcherSourceId("TestInDatafetcher", SourceType.DgsComponentJava, "testIn", files),
                                                 new DataSource("TestInDatafetcher", "com.netflix.gateway.generated.datafetchers", GraphQlTarget.String, fetcher))
-                                ))
+                                )),
+                        true
                 ),
-                "test"
+                createDigest("goodbye")
         );
     }
 
     private static @NotNull GraphQlTransports graphTransport() {
-        return new GraphQlTransports(new GraphQlTransportModel(
-                fetcherItemId,
-                HttpGraphQlTransportBuilder.builder()
-                        .host("localhost")
-                        .port(8080)
-                        .path("/graphql")
-                        .build()
-        ));
+        return new GraphQlTransports(
+                new GraphQlTransportModel(
+                        fetcherItemId,
+                        HttpGraphQlTransportBuilder.builder()
+                                .host("localhost")
+                                .port(8080)
+                                .path("/graphql")
+                                .build(),
+                        serviceInstanceId,
+                        true
+                ),
+                createDigest("hello"));
     }
 
 }

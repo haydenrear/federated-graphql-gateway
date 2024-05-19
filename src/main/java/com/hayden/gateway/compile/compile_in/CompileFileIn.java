@@ -1,6 +1,6 @@
 package com.hayden.gateway.compile.compile_in;
 
-import com.hayden.graphql.models.visitor.DataSource;
+import com.hayden.graphql.models.visitor.model.DataSource;
 import com.hayden.utilitymodule.io.FileUtils;
 import com.squareup.javapoet.JavaFile;
 import lombok.experimental.Delegate;
