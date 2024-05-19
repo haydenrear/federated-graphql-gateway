@@ -8,6 +8,7 @@ import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.result.error.Error;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetcher;
+import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -132,11 +133,13 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                         .map(e -> new DataFetcherRegistration(e.getKey(), e.getValue()))
                         .toList()
         );
-        codeRegistryBuilder.dataFetchers(
-                nextFetcher.getKey(),
-                MapFunctions.CollectMap(dataFetchers.entrySet().stream()
-                        .map(d -> Map.entry(d.getKey().fieldName(), d.getValue().fetcher())))
-        );
+
+        nextFetcher.getValue()
+                .forEach((sourceId, fetcherData) -> codeRegistryBuilder.dataFetcher(
+                        FieldCoordinates.coordinates("Query", sourceId.fieldName()),
+                        fetcherData.fetcher()
+                ));
+
     }
 
     public record DataFetcherRegistration(

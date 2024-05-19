@@ -1,6 +1,7 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
+import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
 import com.hayden.utilitymodule.result.res.Responses;
@@ -16,6 +17,8 @@ import org.springframework.util.Assert;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -101,7 +104,7 @@ public class FlyJavaCompile {
                 .map(CompilerSourceWriter.ToCompileFile::packageName)
                 .distinct()
                 .map(nextPackageName -> {
-                    String packageName = nextPackageName.replace(".", "/");
+                    String packageName = PathUtil.fromPackage(nextPackageName);
                     var compileOutPath = getCompileOutPath(args, nextPackageName, packageName);
                     return Pair.of(Path.of(args.compilerIn(), packageName).toFile(), compileOutPath.toFile().toPath());
                 })
@@ -114,7 +117,7 @@ public class FlyJavaCompile {
                                 e.getMessage());
                     }
                     return Stream.empty();
-                }).collect(Collectors.toList());
+                }).collect(Collectors.toCollection(ArrayList::new));
         return clzzes;
     }
 
@@ -208,6 +211,7 @@ public class FlyJavaCompile {
         return doCompile(fileManager, files, compiler, diagnostics, optionList);
     }
 
+    // TODO: bubble error...
     private static boolean doCompile(StandardJavaFileManager fileManager, List<File> found, JavaCompiler compiler,
                                      DiagnosticCollector<JavaFileObject> diagnostics, List<String> optionList) {
         var compilationUnit = fileManager.getJavaFileObjectsFromFiles(found);
@@ -218,7 +222,16 @@ public class FlyJavaCompile {
                 optionList,
                 null,
                 compilationUnit);
-        return task.call();
+
+        if (!task.call()) {
+            String diagnosticErrors = diagnostics.getDiagnostics().stream()
+                    .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+                    .map(d -> d.getMessage(Locale.US)).collect(Collectors.joining("\n"));
+            System.out.println(diagnosticErrors);
+            return false;
+        }
+
+        return true;
     }
 
 

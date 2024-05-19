@@ -7,6 +7,7 @@ import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
 import com.hayden.utilitymodule.result.Result;
+import com.hayden.utilitymodule.result.map.ResultCollectors;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -83,29 +84,34 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                var contains = new HashSet<String>();
-                removeExpiredServices();
-                Optional.ofNullable(discoveryClient.getInstances(GRAPHQL_SERVICE))
-                        .stream()
-                        .flatMap(Collection::stream)
-                        .filter(s -> Objects.nonNull(s.getHost()))
-                        .peek(s -> contains.add(s.getHost()))
-                        .filter(s -> !services.containsKey(s.getHost()))
-                        .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()).stream())
-                        .forEach(this::putServices);
-
-                pushToQueue(contains);
-
-                if (getRegistrations.getCount() > 0)
-                    getRegistrations.countDown();
+                runDiscoveryInner();
             }
 
-            private void putServices(ServiceVisitorDelegate service) {
-                services.put(service.host(), service);
-                callServiceAgain.add(new DelayedService(service.host(), discoveryProperties.getDiscoveryPingSeconds()));
-            }
 
-        }, 0, 100);
+        }, 0, 1000);
+    }
+
+    void runDiscoveryInner() {
+        var contains = new HashSet<String>();
+        removeExpiredServices();
+        Optional.ofNullable(discoveryClient.getInstances(GRAPHQL_SERVICE))
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(s -> Objects.nonNull(s.getHost()))
+                .peek(s -> contains.add(s.getHost()))
+                .filter(s -> !services.containsKey(s.getHost()))
+                .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()).stream())
+                .forEach(this::putServices);
+
+        pushToQueue(contains);
+
+        if (getRegistrations.getCount() > 0)
+            getRegistrations.countDown();
+    }
+
+    void putServices(ServiceVisitorDelegate service) {
+        services.put(service.host(), service);
+        callServiceAgain.add(new DelayedService(service.host(), discoveryProperties.getDiscoveryPingSeconds()));
     }
 
     public boolean isServicesEmpy() {
@@ -131,23 +137,33 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(RegistriesComposite registries, Context.RegistriesContext context) {
         waitForWasInitialRegistration();
         Collection<Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError>> results
-                = Lists.newArrayList(Result.from(new GraphQlServiceVisitorResponse(), new GraphQlServiceVisitorError()));
+                = new ArrayList<>();
+
         while (!toAdd.isEmpty() && registries.codeRegistry() != null) {
             var s = toAdd.poll();
-            results.addAll(
+
+            results.add(
                     s.visitors().stream()
                             .map(g -> g.visit(registries, context))
-                            .toList()
+                            .collect(ResultCollectors.from(
+                                    new GraphQlServiceVisitorResponse(),
+                                    new GraphQlServiceVisitorError())
+                            )
             );
+
             if (loadCode.getCount() != 0)
                 loadCode.countDown();
         }
 
-        return Result.all(results);
+        return results.stream()
+                .collect(ResultCollectors.from(
+                        new GraphQlServiceVisitorResponse(),
+                        new GraphQlServiceVisitorError()
+                ));
     }
 
      public boolean doReload() {
-        return !this.toAdd.isEmpty();
+        return (this.getRegistrations.getCount() == 0 && !this.toAdd.isEmpty());
     }
 
     @SneakyThrows

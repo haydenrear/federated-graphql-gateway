@@ -13,6 +13,7 @@ import com.hayden.graphql.models.visitor.schema.GraphQlFederatedSchemaSource;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherGraphQlSource;
 import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.io.FileUtils;
+import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.*;
 import com.hayden.utilitymodule.result.error.AggregateError;
 import com.hayden.utilitymodule.result.error.Error;
@@ -29,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -197,8 +199,9 @@ public class DgsCompiler {
                 (provider, clzzes) -> {
                     Map<String, List<Class<?>>> clzzesByType = MapFunctions.CollectMapGroupBy(
                             clzzes.stream()
-                                    .filter(DataFetcher.class::isAssignableFrom)
-                                    .map(c -> Map.entry(c.getName(), c))
+                                    // TODO: is assignable from datafetcher or has DgsData
+//                                    .filter(DataFetcher.class::isAssignableFrom)
+                                    .map(c -> Map.entry(c.getSimpleName(), c))
                     );
                     var agg = new AggregateError.StandardAggregateError(Sets.newHashSet());
                     if (provider instanceof ClientCodeCompileFileProvider.ClientCodeCompileProvider fileProvider) {
@@ -264,11 +267,11 @@ public class DgsCompiler {
     }
     private Result<ClientCodeCompileFileProvider.ClientCodeCompileProvider, GraphQlFetcherFetcherClassesError> writeCompileFiles(DataSource dataFetcher) {
         if (dataFetcher.sourceMetadata().targetType() == GraphQlTarget.String) {
-            compileSourceWriterResult.writeFiles(
+            return compileSourceWriterResult.writeFiles(
                             dataFetcher,
                             o -> Stream.of(new CompileFileIn.ClientFileCompileFileIn(o)),
                             ClientCodeCompileFileProvider.ClientCodeCompileProvider::new,
-                            graphQlCompilerProperties.getCompilerIn().toString()
+                            Paths.get(graphQlCompilerProperties.getCompilerIn().toString(), PathUtil.fromPackage(dataFetcher.sourceMetadata().packageName())).toString()
                     )
                     .cast();
         }
@@ -312,6 +315,5 @@ public class DgsCompiler {
                 .map(writeResult -> Map.entry(writeResult, new GraphQlDataFetcherWriteResult(writeResult.compileFiles(), sourceIdDataFetcher.getKey(), sourceIdDataFetcher.getValue())))
                 .map(l -> new GraphQlDataFetcherAggregateWriteResult(Lists.newArrayList(l.getValue()), l.getKey()));
     }
-
 
 }

@@ -32,6 +32,7 @@ public class CompilerSourceWriter {
                                                                                 Function<T, Stream<CompileFileIn>> fileFn,
                                                                                 Function<Collection<ToCompileFile>, R> factory,
                                                                                 String writePath) {
+        // TODO: bubble error...
         return Result.ok(
                 factory.apply(fileFn.apply(generate)
                         .flatMap(j -> {

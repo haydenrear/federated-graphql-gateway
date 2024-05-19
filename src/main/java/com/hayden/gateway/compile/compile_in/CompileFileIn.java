@@ -7,6 +7,7 @@ import lombok.experimental.Delegate;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 public interface CompileFileIn {
    
@@ -30,13 +31,13 @@ public interface CompileFileIn {
     record ClientFileCompileFileIn(DataSource o) implements CompileFileIn {
 
         @Override
-        public void writeTo(File file) throws IOException {
-            FileUtils.writeToFile(o.sourceMetadata().target(), file.toPath());
+        public void writeTo(File file) {
+            FileUtils.writeToFile(o.sourceMetadata().target(), Paths.get(file.toPath().toString(), name()));
         }
 
         @Override
         public String name() {
-            return o.id();
+            return "%s.java".formatted(o.id());
         }
 
         @Override

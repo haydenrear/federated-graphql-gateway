@@ -1,6 +1,6 @@
 type Query @extends {
     ticks(first: Int, after: Int, allowCached: Boolean): TicksConnection
-    testInArr: [TestIn]
+    testIn: TestIn
 }
 
 type AnotherQuery @extends {

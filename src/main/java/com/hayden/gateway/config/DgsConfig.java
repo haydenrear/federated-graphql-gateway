@@ -20,12 +20,12 @@ public class DgsConfig {
 
     @Bean
     @Primary
-    public DefaultDgsQueryExecutor.ReloadSchemaIndicator reloadSchemaIndicator(Discovery discovery) {
+    public DefaultDgsQueryExecutor.ReloadSchemaIndicator reloadIndicator(Discovery discovery) {
         return discovery::doReload;
     }
 
     @Bean
-    public ReloadIndicator reloadIndicator() {
+    public ReloadIndicator federatedReloadIndicator() {
         AtomicBoolean b = new AtomicBoolean();
         return new ReloadIndicator() {
             @Override

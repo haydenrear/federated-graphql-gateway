@@ -1,4 +1,5 @@
 #dgs.graphql.schema-locations: classpath:graphql/*.graphql*
+dgs.reload: true
 spring:
   docker:
     compose:

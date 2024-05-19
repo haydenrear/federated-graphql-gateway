@@ -11,9 +11,11 @@ import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class ClientCodeCompileFileProvider implements CompileFileProvider<Client
             var paths = javaFilesCompilerArgs.compileWriterIn().source().stream()
                     .flatMap(w -> w.results().stream().map(p -> Map.entry(w.dataSource().sourceMetadata().packageName(), p)))
                     .map(p -> new CompilerSourceWriter.ToCompileFile(p.getValue().file(), p.getKey()))
-                    .toList();
+                    .collect(Collectors.toCollection(ArrayList::new));
 
             return Result.ok(new ClientCodeCompileProvider(paths));
         }
