@@ -2,6 +2,7 @@ package com.hayden.gateway.discovery.comm;
 
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.MapFunctions;
+import com.hayden.utilitymodule.assert_util.AssertUtil;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -9,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 public interface FederatedGraphQlState {
 
@@ -39,20 +41,34 @@ public interface FederatedGraphQlState {
         }
 
         public void registerRefresh(ServiceVisitorDelegate serviceDelegate) {
+            updateServiceDelay(serviceDelegate);
+            if (!this.serviceDelegates().containsKey(serviceDelegate.host())) {
+                this.serviceDelegates().put(serviceDelegate.host(), serviceDelegate);
+            } else {
+                AssertUtil.assertTrue(
+                        () -> this.serviceDelegates.containsKey(serviceDelegate.host()),
+                        () -> "Service visitor did not contain service instance ID %s."
+                                .formatted(serviceDelegate.host())
+                ); 
+                serviceDelegate.visitors()
+                        .forEach((sKey, s) -> this.registerRefresh(s, serviceDelegate.host()));
+            }
+
+        }
+
+        private void updateServiceDelay(ServiceVisitorDelegate serviceDelegate) {
             if (services.containsKey(serviceDelegate.host())) {
                 var curr = services.remove(serviceDelegate.host());
                 Assert.isTrue(callServiceAgain.remove(curr), "Call services unsynchronized.");
             } else {
-                Assert.isTrue(!services.containsKey(serviceDelegate.host()), "Call services unsynchronized.");
+                AssertUtil.assertTrue(
+                        () -> callServiceAgain.stream()
+                                .noneMatch(d -> d.host().equals(serviceDelegate.host())), 
+                        "Call services unsynchronized."
+                );
             }
             services.put(serviceDelegate.host(), serviceDelegate.delayedService());
             callServiceAgain.add(serviceDelegate.delayedService());
-            if (!this.serviceDelegates().containsKey(serviceDelegate.host())) {
-                this.serviceDelegates().put(serviceDelegate.host(), serviceDelegate);
-            } else {
-                serviceDelegate.visitors().forEach((sKey, s) -> this.registerRefresh(s, serviceDelegate.host()));
-            }
-
         }
 
         public void removeExpiredServices() {
@@ -67,33 +83,39 @@ public interface FederatedGraphQlState {
             var removed = this.serviceDelegates().remove(serviceInstanceId);
             removed.remove();
             removed.visitors().values().forEach(ServiceVisitorDelegate.ServiceVisitor::remove);
+            dirty.set(true);
         }
 
         public void registerRefresh(ServiceVisitorDelegate.ServiceVisitor serviceVisitor,
                                     FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id) {
             reentrantLock.lock();
             if (serviceVisitor.invalidateCurrent()) {
-                serviceDelegates.compute(id, (curr, prev) -> {
-                    if (prev != null) {
-                        prev.visitors().remove(serviceVisitor.visitor().getClass());
-                        prev.visitors().put(serviceVisitor.visitor().getClass(), serviceVisitor);
-                        return prev;
-                    } else {
-                        throw new RuntimeException();
-                    }
-                });
+                removeCurrentAndAddNew(serviceVisitor, id);
             } else {
-                serviceDelegates.compute(id, (curr, prev) -> {
-                    if (prev != null && !prev.visitors().containsKey(serviceVisitor.visitor().getClass())) {
-                        prev.visitors().put(serviceVisitor.visitor().getClass(), serviceVisitor);
-                        return prev;
-                    } else {
-                        throw new RuntimeException();
-                    }
-                });
+                putNewIfNotExisting(serviceVisitor, id);
             }
             dirty.set(true);
             reentrantLock.unlock();
+        }
+
+        private void putNewIfNotExisting(ServiceVisitorDelegate.ServiceVisitor serviceVisitor, FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id) {
+            serviceDelegates.compute(id, (key, prev) -> Optional.ofNullable(prev)
+                    .filter(Predicate.not(p -> p.visitors().containsKey((serviceVisitor.visitor().getClass()))))
+                    .stream()
+                    .peek(p -> p.visitors().put(serviceVisitor.visitor().getClass(), serviceVisitor))
+                    .findAny()
+                    .orElseThrow(RuntimeException::new)
+            );
+        }
+
+        private void removeCurrentAndAddNew(ServiceVisitorDelegate.ServiceVisitor serviceVisitor, FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id) {
+            serviceDelegates.compute(id, (key, prev) -> Optional.ofNullable(prev)
+                    .map(p -> {
+                        p.visitors().remove(serviceVisitor.visitor().getClass());
+                        p.visitors().put(serviceVisitor.visitor().getClass(), serviceVisitor);
+                        return p;
+                    })
+                    .orElseThrow(RuntimeException::new));
         }
 
 

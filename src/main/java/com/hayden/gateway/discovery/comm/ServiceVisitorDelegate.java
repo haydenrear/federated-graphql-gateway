@@ -14,7 +14,7 @@ public record ServiceVisitorDelegate(
         Map<Class<? extends GraphQlServiceApiVisitor>, ServiceVisitor> visitors,
         DelayedService delayedService,
         MessageDigestBytes digest
-) implements Digest{
+) implements Digest {
 
     public record ServiceVisitor(@Delegate GraphQlServiceApiVisitor visitor, AtomicBoolean registered, MessageDigestBytes digest) implements Digest, Reloadable {
         public ServiceVisitor(GraphQlServiceApiVisitor visitor) {

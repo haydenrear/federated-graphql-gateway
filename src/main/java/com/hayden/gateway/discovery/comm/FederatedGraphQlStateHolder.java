@@ -4,6 +4,7 @@ import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.MapFunctions;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -18,13 +19,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 @Component
+@RequiredArgsConstructor
 public class FederatedGraphQlStateHolder {
 
     private static final AtomicReference<FederatedGraphQlState> appState = new AtomicReference<>(new FederatedGraphQlState.PreStartup());
     private static final ReentrantLock lock = new ReentrantLock();
 
-    @Autowired
-    private ReloadIndicator reloadIndicator;
+    private final ReloadIndicator reloadIndicator;
 
     private FederatedGraphQlSourceProvider federatedDynamicGraphQlSource;
 
@@ -35,18 +36,21 @@ public class FederatedGraphQlStateHolder {
 
     public boolean doReload() {
         lock.lock();
-        if (!(appState.get() instanceof FederatedGraphQlState.PostStartup postStartup))
-            return false;
-        boolean anyReload = postStartup.serviceDelegates().values().stream()
-                .flatMap(s -> s.visitors().values().stream())
-                .anyMatch(s -> !s.registered().get());
-        if (anyReload)
-            postStartup.serviceDelegates().values().stream()
-                .flatMap(s -> s.visitors().values().stream())
-                .filter(ServiceVisitorDelegate.ServiceVisitor::isReloadable)
-                .forEach(s -> s.registered().set(false));
-        lock.unlock();
-        return anyReload;
+        if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
+            boolean anyReload = postStartup.serviceDelegates().values().stream()
+                    .flatMap(s -> s.visitors().values().stream())
+                    .anyMatch(s -> !s.registered().get());
+            if (anyReload) {
+                postStartup.serviceDelegates().values().stream()
+                        .flatMap(s -> s.visitors().values().stream())
+                        .filter(ServiceVisitorDelegate.ServiceVisitor::isReloadable)
+                        .forEach(s -> s.registered().set(false));
+            }
+            var doReload = anyReload || postStartup.dirty().getAndSet(false);
+            lock.unlock();
+            return doReload;
+        }
+        return false;
     }
 
     public Stream<ServiceVisitorDelegate.ServiceVisitor> current() {
@@ -87,7 +91,8 @@ public class FederatedGraphQlStateHolder {
         lock.lock();
         if (appState.get() instanceof FederatedGraphQlState.PreStartup preStartup) {
             var m = MapFunctions.CollectMap(
-                    Arrays.stream(FederatedGraphQlState.StartupTask.values()).map(s -> Map.entry(s, new CountDownLatch(1))),
+                    Arrays.stream(FederatedGraphQlState.StartupTask.values())
+                            .map(s -> Map.entry(s, new CountDownLatch(1))),
                     () -> new EnumMap<>(FederatedGraphQlState.StartupTask.class)
             );
             appState.set(new FederatedGraphQlState.IntermediaryStartup(m));
@@ -128,18 +133,13 @@ public class FederatedGraphQlStateHolder {
         lock.unlock();
     }
 
-    private static void countdown(FederatedGraphQlState.StartupTask startupTask, EnumMap<FederatedGraphQlState.StartupTask, CountDownLatch> m) {
+    private static void countdown(FederatedGraphQlState.StartupTask startupTask,
+                                  EnumMap<FederatedGraphQlState.StartupTask, CountDownLatch> m) {
         m.computeIfPresent(startupTask, (s, c) -> {
+            Assert.notNull(c, "Countdown latch was null for %s. This should not be possible.".formatted(s));
             c.countDown();
             return c;
         });
-    }
-
-    public boolean isPreStartup() {
-        lock.lock();
-        var is = appState.get() instanceof FederatedGraphQlState.PreStartup;
-        lock.unlock();
-        return is;
     }
 
 }
