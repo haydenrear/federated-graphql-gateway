@@ -3,6 +3,7 @@ package com.hayden.gateway.discovery.comm;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.assert_util.AssertUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -24,7 +25,39 @@ public interface FederatedGraphQlState {
         }
     }
 
-    record IntermediaryStartup(EnumMap<StartupTask, CountDownLatch> completed) implements FederatedGraphQlState {}
+    @Slf4j
+    record IntermediaryStartup(EnumMap<StartupTask, CountDownLatch> completed) implements FederatedGraphQlState {
+
+        public IntermediaryStartup() {
+            this(MapFunctions.CollectMap(
+                    Arrays.stream(FederatedGraphQlState.StartupTask.values())
+                            .map(s -> Map.entry(s, new CountDownLatch(1))),
+                    () -> new EnumMap<>(FederatedGraphQlState.StartupTask.class)
+            ));
+        }
+
+        public void countdown(StartupTask startupTask) {
+            completed.compute(startupTask, (s, c) -> {
+                Assert.notNull(c, "Countdown latch was null for %s. This should not be possible.".formatted(s));
+                c.countDown();
+                return c;
+            });
+        }
+
+        public boolean awaitForStartupTasks() {
+            return this.completed.keySet().stream().allMatch(this::awaitForStartupTask);
+        }
+
+        public boolean startupTasksDone() {
+            return completed.values().stream().allMatch(c -> c.getCount() == 0);
+        }
+
+        public boolean awaitForStartupTask(StartupTask startupTask) {
+            Assert.isTrue(completed.containsKey(startupTask), "Did not contain :%s.".formatted(startupTask));
+            return FederatedGraphQlStateHolder.awaitLatch(completed.get(startupTask), 90);
+        }
+
+    }
 
     record PostStartup(Map<FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId, ServiceVisitorDelegate> serviceDelegates,
                        ReentrantLock reentrantLock,
@@ -59,12 +92,12 @@ public interface FederatedGraphQlState {
         private void updateServiceDelay(ServiceVisitorDelegate serviceDelegate) {
             if (services.containsKey(serviceDelegate.host())) {
                 var curr = services.remove(serviceDelegate.host());
-                Assert.isTrue(callServiceAgain.remove(curr), "Call services unsynchronized.");
+                Assert.isTrue(callServiceAgain.remove(curr), "Call services un-synchronized.");
             } else {
                 AssertUtil.assertTrue(
                         () -> callServiceAgain.stream()
                                 .noneMatch(d -> d.host().equals(serviceDelegate.host())), 
-                        "Call services unsynchronized."
+                        "Call services un-synchronized."
                 );
             }
             services.put(serviceDelegate.host(), serviceDelegate.delayedService());

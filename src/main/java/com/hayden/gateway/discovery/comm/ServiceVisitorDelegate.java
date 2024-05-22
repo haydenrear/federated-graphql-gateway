@@ -16,7 +16,8 @@ public record ServiceVisitorDelegate(
         MessageDigestBytes digest
 ) implements Digest {
 
-    public record ServiceVisitor(@Delegate GraphQlServiceApiVisitor visitor, AtomicBoolean registered, MessageDigestBytes digest) implements Digest, Reloadable {
+    public record ServiceVisitor(@Delegate GraphQlServiceApiVisitor visitor, AtomicBoolean registered, MessageDigestBytes digest)
+            implements Digest, Reloadable {
         public ServiceVisitor(GraphQlServiceApiVisitor visitor) {
             this(visitor, new AtomicBoolean(false), visitor.digest());
         }
