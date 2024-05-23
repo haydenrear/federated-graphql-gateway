@@ -42,7 +42,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
 
     @SneakyThrows
     @Override
-    public Result<DgsCompileResult, AggregateError> toCompileFiles(CompileArgs sourceIn) {
+    public Result<DgsCompileResult, FlyJavaCompile.CompileAndLoadError> toCompileFiles(CompileArgs sourceIn) {
         if (sourceIn instanceof FlyJavaCompile.PathCompileArgs pathCompileArgs) {
             if (!sourceIn.cleanPrevious())
                 log.error("Could not clean previous before compiling DGS.");
@@ -50,7 +50,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
             log.info("Found {} DGS compile files.", gen.compileFiles.size());
             return Result.ok(gen);
         } else {
-            return Result.err(new AggregateError.StandardAggregateError("Compiler args of invalid type for Dgs compile file provider: %s."
+            return Result.err(new FlyJavaCompile.CompileAndLoadError("Compiler args of invalid type for Dgs compile file provider: %s."
                     .formatted(sourceIn.getClass().getSimpleName())));
         }
     }

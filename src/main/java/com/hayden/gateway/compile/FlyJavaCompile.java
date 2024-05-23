@@ -1,9 +1,11 @@
 package com.hayden.gateway.compile;
 
+import com.google.common.collect.Sets;
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.error.Error;
 import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.Nullable;
@@ -17,8 +19,6 @@ import org.springframework.util.Assert;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -53,6 +53,28 @@ public class FlyJavaCompile {
         }
     }
 
+    public record CompileAndLoadError(Set<Error> errors)
+            implements AggregateError {
+
+        public CompileAndLoadError(String error) {
+            this(Sets.newHashSet(Error.fromMessage(error)));
+        }
+
+        @Override
+        public void add(Agg aggregateResponse) {
+            if (aggregateResponse instanceof CompileAndLoadError compileAndLoadError)
+                this.errors.addAll(compileAndLoadError.errors);
+        }
+    }
+
+    public record CompileResult(Set<File> files) implements Responses.AggregateResponse {
+        @Override
+        public void add(Agg t) {
+            if (t instanceof CompileResult compileResult)
+                this.files.addAll(compileResult.files);
+        }
+    }
+
     public record CompileAndLoadResult<T extends CompilerSourceWriter.CompileSourceWriterResult>(List<Class<?>> classesCreated, T writerResult)
             implements Responses.AggregateResponse {
 
@@ -64,38 +86,40 @@ public class FlyJavaCompile {
     }
 
     public interface CompileSourceWriterProcessor<T extends CompilerSourceWriter.CompileSourceWriterResult> {
-        Result<T, AggregateError> process(T t, Collection<Class<?>> clzzes);
+        Result<T, CompileAndLoadError> process(T t, Collection<Class<?>> clzzes);
     }
 
-    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, CompileAndLoadError> compileAndLoad(
             CompileArgs args,
             @Nullable CompileSourceWriterProcessor<CompilerSourceWriter.CompileSourceWriterResult> processor
     ) {
         var found = dgsCompileFileProvider.toCompileFiles(args);
-
-        if (doCompilation(found.stream().flatMap(f -> f.compileFiles().stream()).map(CompilerSourceWriter.ToCompileFile::file).toList())) {
-            log.info("Starting compilation... for path {}.", args.compilerIn());
-            return found.map(c -> {
-                        List<Class<?>> clzzes = compileFilesClzzes(args, c);
-                        var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
-                                .map(p -> p.process(c, clzzes))
-                                .orElse(Result.err(new AggregateError.StandardAggregateError("Could not process.")));
-                        return Result.from(new CompileAndLoadResult<>(
-                                        clzzes,
-                                        compileSourceWriterResultAggregateErrorResult
-                                                .orElse(c)
-                                ),
-                                compileSourceWriterResultAggregateErrorResult.error()
-                        );
-                    })
-                    .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError>err(new AggregateError.StandardAggregateError(
-                            "Compile result was not found from file provider.")));
-        }
-        return Result.err(new AggregateError.StandardAggregateError("No compile sources found."));
+        log.info("Starting compilation... for path {}.", args.compilerIn());
+        return doCompilation(found)
+                .doOnError(err -> log.error("Found compilation errors: {}.", err.errors))
+                .map(compileResultFound -> {
+                    log.info("Compiled the following files: {}.", compileResultFound);
+                    return found.map(c -> {
+                                List<Class<?>> clzzes = compileFilesClzzes(args, c);
+                                var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
+                                        .map(p -> p.process(c, clzzes))
+                                        .orElse(Result.err(new CompileAndLoadError("Could not process.")));
+                                return Result.from(new CompileAndLoadResult<>(
+                                                clzzes,
+                                                compileSourceWriterResultAggregateErrorResult
+                                                        .orElse(c)
+                                        ),
+                                        compileSourceWriterResultAggregateErrorResult.error()
+                                );
+                            })
+                            .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, CompileAndLoadError>err(new CompileAndLoadError(
+                                    "Compile result was not found from file provider.")));
+                })
+                .orElseGet(() -> Result.err(new CompileAndLoadError("No compile sources found.")));
     }
 
 
-    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(CompileArgs args) {
+    public Result<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, CompileAndLoadError> compileAndLoad(CompileArgs args) {
         return compileAndLoad(args, null);
     }
 
@@ -194,9 +218,10 @@ public class FlyJavaCompile {
                 .replace("/", ".");
     }
 
-    private static boolean doCompilation(List<File> found) {
-        if (found.isEmpty()) {
-            return true;
+    private static Result<CompileResult, CompileAndLoadError> doCompilation(
+            Result<? extends CompilerSourceWriter.CompileSourceWriterResult, CompileAndLoadError> compileFiles) {
+        if (compileFiles.isEmpty()) {
+            return Result.err(new CompileAndLoadError("No files to compile found."));
         }
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
@@ -204,16 +229,26 @@ public class FlyJavaCompile {
         List<String> optionList = new ArrayList<String>();
         optionList.add("-classpath");
         optionList.add(System.getProperty("java.class.path"));
-        Assert.isTrue(found.stream().allMatch(f -> f.exists() && f.length() != 0), "Files to compile did not exist!");
-        var files = found.stream().map(f -> Map.entry(f.getName(), f)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1))
-                .values().stream().toList();
+        return compileFiles
+                .flatMapResult(c -> {
+                    var found = c.compileFiles().stream().map(CompilerSourceWriter.ToCompileFile::file).toList();
+                    Assert.isTrue(found.stream().allMatch(f -> f.exists() && f.length() != 0), "Files to compile did not exist!");
+                    var files = found.stream()
+                            .map(f -> Map.entry(f.getName(), f))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1))
+                            .values().stream().toList();
 
-        return doCompile(fileManager, files, compiler, diagnostics, optionList);
+                    return doCompile(fileManager, files, compiler, diagnostics, optionList);
+                });
     }
 
-    // TODO: bubble error...
-    private static boolean doCompile(StandardJavaFileManager fileManager, List<File> found, JavaCompiler compiler,
-                                     DiagnosticCollector<JavaFileObject> diagnostics, List<String> optionList) {
+    private static Result<CompileResult, CompileAndLoadError> doCompile(
+            StandardJavaFileManager fileManager,
+            List<File> found,
+            JavaCompiler compiler,
+            DiagnosticCollector<JavaFileObject> diagnostics,
+            List<String> optionList
+    ) {
         var compilationUnit = fileManager.getJavaFileObjectsFromFiles(found);
         JavaCompiler.CompilationTask task = compiler.getTask(
                 null,
@@ -224,14 +259,16 @@ public class FlyJavaCompile {
                 compilationUnit);
 
         if (!task.call()) {
-            String diagnosticErrors = diagnostics.getDiagnostics().stream()
-                    .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
-                    .map(d -> d.getMessage(Locale.US)).collect(Collectors.joining("\n"));
-            System.out.println(diagnosticErrors);
-            return false;
+            return Result.err(
+                    new CompileAndLoadError(diagnostics.getDiagnostics().stream()
+                            .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+                            .map(d -> d.getMessage(Locale.US))
+                            .map(Error::fromMessage)
+                            .collect(Collectors.toSet())
+                    ));
         }
 
-        return true;
+        return Result.ok(new CompileResult(Sets.newHashSet(found)));
     }
 
 

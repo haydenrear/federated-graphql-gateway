@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class ClientCodeCompileFileProvider implements CompileFileProvider<ClientCodeCompileFileProvider.ClientCodeCompileProvider> {
 
     @Override
-    public Result<ClientCodeCompileProvider, AggregateError> toCompileFiles(CompileArgs sourceIn) {
+    public Result<ClientCodeCompileProvider, FlyJavaCompile.CompileAndLoadError> toCompileFiles(CompileArgs sourceIn) {
         if (sourceIn instanceof FlyJavaCompile.JavaFilesCompilerArgs javaFilesCompilerArgs) {
             var paths = javaFilesCompilerArgs.compileWriterIn().source().stream()
                     .flatMap(w -> w.results().stream().map(p -> Map.entry(w.dataSource().sourceMetadata().packageName(), p)))
@@ -31,7 +31,7 @@ public class ClientCodeCompileFileProvider implements CompileFileProvider<Client
 
             return Result.ok(new ClientCodeCompileProvider(paths));
         }
-        return Result.err(new AggregateError.StandardAggregateError("Compile args was not of valid type: %s.".formatted(sourceIn.getClass().getName())));
+        return Result.err(new FlyJavaCompile.CompileAndLoadError("Compile args was not of valid type: %s.".formatted(sourceIn.getClass().getName())));
     }
 
     public record ClientCodeCompileProvider(

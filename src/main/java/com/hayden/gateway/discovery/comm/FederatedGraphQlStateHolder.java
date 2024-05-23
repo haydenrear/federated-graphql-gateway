@@ -3,13 +3,11 @@ package com.hayden.gateway.discovery.comm;
 import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
-import com.hayden.utilitymodule.MapFunctions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;

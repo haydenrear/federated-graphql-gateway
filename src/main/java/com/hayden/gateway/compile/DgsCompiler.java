@@ -166,8 +166,8 @@ public class DgsCompiler {
                             ));
                     return loaded.flatMapResult(r -> r.writerResult() instanceof DgsCompileFileProvider.DgsCompileResult
                                     ? Result.ok(r)
-                                    : Result.err(new GraphQlFetcherFetcherClassesError(Error.fromMessage("Did not recognize compile result.")))
-                            )
+                                    : Result.err(new GraphQlFetcherFetcherClassesError(Error.fromMessage("Did not recognize compile result."))
+                            ))
                             .flatMapResult(ig -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.get())))
                             .orElseThrow(() -> new NotImplementedException("No other introspection implemented at this time, besides DGS, for schema!"));
                 });
@@ -188,7 +188,7 @@ public class DgsCompiler {
                 .collect(ResultCollectors.from(new GraphQlFetcherFetcherClassesResult(), new GraphQlFetcherFetcherClassesError()));
     }
 
-    private Result<FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, AggregateError> compileAndLoad(
+    private Result<FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, FlyJavaCompile.CompileAndLoadError> compileAndLoad(
             GraphQlDataFetcherAggregateWriteResult writeResult
     ) {
         return clientFlyClientCompileJava.compileAndLoad(
@@ -203,7 +203,7 @@ public class DgsCompiler {
 //                                    .filter(DataFetcher.class::isAssignableFrom)
                                     .map(c -> Map.entry(c.getSimpleName(), c))
                     );
-                    var agg = new AggregateError.StandardAggregateError(Sets.newHashSet());
+                    var agg = new FlyJavaCompile.CompileAndLoadError(Sets.newHashSet());
                     if (provider instanceof ClientCodeCompileFileProvider.ClientCodeCompileProvider fileProvider) {
                         return writeResult.source()
                                 .stream()
