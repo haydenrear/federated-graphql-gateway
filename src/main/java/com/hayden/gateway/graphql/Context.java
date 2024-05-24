@@ -8,14 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface Context {
-    record CodegenContext(
-            DgsCompiler javaCompiler) implements Context {}
+    record CodegenContext(DgsCompiler javaCompiler) implements Context {}
 
     record TypeDefinitionContext() implements Context {}
 
     record MimeTypeDefinitionContext(List<GraphQlDataFetcher.DataFetcherRegistration> dataFetchers) implements Context {}
 
-    record GraphQlTransportContext(List<GraphQlRegistration.GraphQlTransportFederatedGraphQlRegistration> transportRegistrations) {
+    record GraphQlTransportContext(List<GraphQlRegistration.GraphQlTransportFederatedGraphQlRegistration> transportRegistrations) implements Context {
     }
 
     record RegistriesContext(TypeDefinitionContext typeDefinitionContext,

@@ -25,14 +25,17 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDi
 
     @Override
     public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar, Context.RegistriesContext registriesContext) {
-        Optional.ofNullable(this.toTransportRegistration(this.model))
+        Optional.of(this.toTransportRegistration(this.model))
                 .ifPresent(m -> removeCallback.callback = federatedGraphQlTransportRegistrar.visit(m));
 
         return Result.ok(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
 
     public GraphQlRegistration toTransportRegistration(GraphQlTransportModel graphQlFetcherSource) {
-        return null;
+        return new GraphQlRegistration.GraphQlTransportFederatedGraphQlRegistration(
+           graphQlFetcherSource.transportBuilder().toTransport(),
+           graphQlFetcherSource.serviceId()
+        );
     }
 
     @Override

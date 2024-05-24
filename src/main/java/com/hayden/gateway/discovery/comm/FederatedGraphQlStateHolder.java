@@ -6,6 +6,7 @@ import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetche
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +59,10 @@ public class FederatedGraphQlStateHolder {
             return postStartup.serviceDelegates().values().stream()
                     .onClose(lock::unlock)
                     .flatMap(s -> s.visitors().values().stream())
+                    // re-register any service visitor delegates that are
+                    // reloadable, where the context will be recreated, such
+                    // as DGS, and then if reload is called this will be set to false
+                    // again if reloadable.
                     .filter(s -> s.registered().getAndSet(true));
         }
 
@@ -131,4 +136,7 @@ public class FederatedGraphQlStateHolder {
         lock.unlock();
     }
 
+    public ServiceVisitorDelegate getService(ServiceInstance s) {
+        return null;
+    }
 }

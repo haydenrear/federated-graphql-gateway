@@ -40,12 +40,16 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     @PostConstruct
     public void runDiscovery() {
         Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                runDiscoveryInner();
-            }
-        }, 0, 20000);
+        timer.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        runDiscoveryInner();
+                    }
+                },
+                0,
+                20000
+        );
     }
 
     void runDiscoveryInner() {
@@ -55,7 +59,11 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                 .flatMap(Collection::stream)
                 .filter(s -> Objects.nonNull(s.getHost()))
                 // TODO: if currently exists, send a hash of the previous and have the service validate it with ping pong
-                .flatMap(s -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()).stream())
+                .map(s -> Optional.ofNullable(this.stateHolder.getService(s))
+                        .flatMap(delegate -> graphQlServiceProvider.getServiceVisitorDelegates(delegate, s.getHost()))
+                        .or(() -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()))
+                )
+                .flatMap(Optional::stream)
                 .forEach(this::putServices);
     }
 
@@ -96,13 +104,13 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     }
 
     @Override
-    public FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id() {
-        throw new NotImplementedException("Composite is leaky...");
+    public boolean remove() {
+        return false;
     }
 
     @Override
-    public boolean remove() {
-        return false;
+    public FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id() {
+        throw new NotImplementedException("Composite is leaky...");
     }
 
     @Override

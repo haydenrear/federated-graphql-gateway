@@ -59,8 +59,8 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
     private DgsCompileResult generateDgsToFiles(FlyJavaCompile.PathCompileArgs sourceIn) {
         CodeGenResult generate = generateDgs(sourceIn);
         DgsCompileResult out = new DgsCompileResult(new ArrayList<>(), generate);
-        addTys(out, addJavaDataTypes(generate, sourceIn));
 //        addTys(out, addJavaDataFetchers(generate, sourceIn));
+        addTys(out, addJavaDataTypes(generate, sourceIn));
         addTys(out, addQueries(generate, sourceIn));
         addTys(out, addProjections(generate, sourceIn));
         addTys(out, addConstants(generate, sourceIn));

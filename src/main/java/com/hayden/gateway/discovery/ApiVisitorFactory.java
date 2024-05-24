@@ -17,8 +17,7 @@ public class ApiVisitorFactory {
 
     public Optional<ServiceVisitorDelegate.ServiceVisitor> from(VisitorModel.VisitorModelResponse value) {
         return switch(value.model())  {
-            case GraphQlDataFetcherDiscoveryModel model -> Optional.of(new GraphQlDataFetcher(model, value.digest()))
-                    .map(ServiceVisitorDelegate.ServiceVisitor::new);
+            case GraphQlDataFetcherDiscoveryModel model -> Optional.of(new GraphQlDataFetcher(model, value.digest())).map(ServiceVisitorDelegate.ServiceVisitor::new);
             case DeleteSchemaApiVisitorModel model -> Optional.of(new DeleteSchemaApiVisitor(model, value.digest())).map(ServiceVisitorDelegate.ServiceVisitor::new);
             case GraphQlTransportModel model -> Optional.of(new GraphQlTransports(model, value.digest())).map(ServiceVisitorDelegate.ServiceVisitor::new);
             default -> {

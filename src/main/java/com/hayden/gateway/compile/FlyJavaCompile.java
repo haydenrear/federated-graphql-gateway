@@ -230,19 +230,29 @@ public class FlyJavaCompile {
         optionList.add("-classpath");
         optionList.add(System.getProperty("java.class.path"));
         return compileFiles
-                .flatMapResult(c -> {
-                    var found = c.compileFiles().stream().map(CompilerSourceWriter.ToCompileFile::file).toList();
-                    Assert.isTrue(found.stream().allMatch(f -> f.exists() && f.length() != 0), "Files to compile did not exist!");
-                    var files = found.stream()
-                            .map(f -> Map.entry(f.getName(), f))
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1))
-                            .values().stream().toList();
-
-                    return doCompile(fileManager, files, compiler, diagnostics, optionList);
-                });
+                .flatMapResult(c -> doCompile(
+                        JavaCCompileArgs.builder()
+                                .compileSourceWriterResult(c)
+                                .fileManager(fileManager)
+                                .compiler(compiler)
+                                .diagnostics(diagnostics)
+                                .optionList(optionList)
+                                .build()
+                ));
     }
 
-    private static Result<CompileResult, CompileAndLoadError> doCompile(
+    private static Result<CompileResult, CompileAndLoadError> doCompile(JavaCCompileArgs javaCCompileArgs) {
+        var found = javaCCompileArgs.compileSourceWriterResult().compileFiles().stream().map(CompilerSourceWriter.ToCompileFile::file).toList();
+        Assert.isTrue(found.stream().allMatch(f -> f.exists() && f.length() != 0), "Files to compile did not exist!");
+        var files = found.stream()
+                .map(f -> Map.entry(f.getName(), f))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1))
+                .values().stream().toList();
+
+        return doCallCompile(javaCCompileArgs.fileManager(), files, javaCCompileArgs.compiler(), javaCCompileArgs.diagnostics(), javaCCompileArgs.optionList());
+    }
+
+    private static Result<CompileResult, CompileAndLoadError> doCallCompile(
             StandardJavaFileManager fileManager,
             List<File> found,
             JavaCompiler compiler,

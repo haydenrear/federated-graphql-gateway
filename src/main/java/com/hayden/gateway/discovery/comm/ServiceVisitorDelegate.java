@@ -21,6 +21,10 @@ public record ServiceVisitorDelegate(
         public ServiceVisitor(GraphQlServiceApiVisitor visitor) {
             this(visitor, new AtomicBoolean(false), visitor.digest());
         }
+
+        public MessageDigestBytes digest() {
+            return digest;
+        }
     }
 
     public void remove() {
