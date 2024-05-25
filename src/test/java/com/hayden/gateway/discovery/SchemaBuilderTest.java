@@ -5,6 +5,7 @@ import com.hayden.gateway.discovery.comm.DelayedService;
 import com.hayden.gateway.discovery.comm.GraphQlServiceProvider;
 import com.hayden.gateway.discovery.comm.GraphQlVisitorCommunicationComposite;
 import com.hayden.gateway.discovery.comm.ServiceVisitorDelegate;
+import com.hayden.gateway.federated.WebGraphQlFederatedExecutionService;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlTransports;
 import com.hayden.graphql.federated.transport.http.HttpGraphQlTransportBuilder;
@@ -79,6 +80,8 @@ public class SchemaBuilderTest {
     private FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
     @Autowired
     private GraphQlVisitorCommunicationComposite visitorCommunicationComposite;
+    @Autowired
+    private WebGraphQlFederatedExecutionService webGraphQlFederatedExecutionService;
 
     @MockBean
     GraphQlServiceProvider serviceProvider;
@@ -144,8 +147,8 @@ public class SchemaBuilderTest {
 
 
         @Language("GraphQL") String mutation = """
-        mutation { addTestIn( inValue: 1 ) {  testInValue } }
-        """;
+                mutation { addTestIn( inValue: 1 ) {  testInValue } }
+                """;
 
         var out = queryExecutor.execute(mutation);
         @Language("GraphQL") String testInQuery = "{ testIn { testInValue } }";

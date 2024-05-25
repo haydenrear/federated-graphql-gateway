@@ -82,7 +82,12 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
                 .map(t -> this.visit(registries.codeRegistry(), registries.typeDefinitionRegistry(), context))
                 .ifPresent(all::add);
 
-        Optional.ofNullable(registries.mimeTypeRegistry()).map(t -> this.visit(t, context))
+        Optional.ofNullable(registries.mimeTypeRegistry())
+                .map(t -> this.visit(t, context))
+                .ifPresent(all::add);
+
+        Optional.ofNullable(registries.federatedGraphQlTransportRegistrar())
+                .map(t -> this.visit(t, context))
                 .ifPresent(all::add);
 
         return Result.all(all);

@@ -78,10 +78,8 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                 .flatMap(g -> g.results().stream())
                 .map(result -> Map.entry(
                         result.typeName(),
-                        MapFunctions.CollectMap(
-                                result.fetchers().entrySet().stream()
-                                        .flatMap(f -> nextDataFetcherItem(f, context).stream())
-                        )
+                        MapFunctions.CollectMap(result.fetchers().entrySet().stream()
+                                .flatMap(f -> nextDataFetcherItem(f, context).stream()))
                 ))
                 .forEach(nextFetcher -> registerDataFetcher(codeRegistryBuilder, nextFetcher, context));
 

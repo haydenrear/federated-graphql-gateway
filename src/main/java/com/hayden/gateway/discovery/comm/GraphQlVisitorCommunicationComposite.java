@@ -59,7 +59,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                 .flatMap(Collection::stream)
                 .filter(s -> Objects.nonNull(s.getHost()))
                 // TODO: if currently exists, send a hash of the previous and have the service validate it with ping pong
-                .map(s -> Optional.ofNullable(this.stateHolder.getService(s))
+                .map(s -> this.stateHolder.getService(s)
                         .flatMap(delegate -> graphQlServiceProvider.getServiceVisitorDelegates(delegate, s.getHost()))
                         .or(() -> graphQlServiceProvider.getServiceVisitorDelegates(s.getHost()))
                 )
@@ -79,7 +79,6 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
                         new GraphQlServiceVisitorResponse(),
                         new GraphQlServiceVisitorError()
                 ));
-
     }
 
      public boolean doReload() {

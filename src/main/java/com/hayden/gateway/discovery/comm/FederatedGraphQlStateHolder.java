@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 @Component
@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 public class FederatedGraphQlStateHolder {
 
     private static final AtomicReference<FederatedGraphQlState> appState = new AtomicReference<>(new FederatedGraphQlState.PreStartup());
-    private static final ReentrantLock lock = new ReentrantLock();
+    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final ReloadIndicator reloadIndicator;
 
@@ -36,7 +36,7 @@ public class FederatedGraphQlStateHolder {
 
     public boolean doReload() {
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
-            lock.lock();
+            lock.writeLock().lock();
             boolean anyReload = postStartup.serviceDelegates().values().stream()
                     .flatMap(s -> s.visitors().values().stream())
                     .anyMatch(s -> !s.registered().get());
@@ -47,17 +47,17 @@ public class FederatedGraphQlStateHolder {
                         .forEach(s -> s.registered().set(false));
             }
             var doReload = anyReload || postStartup.dirty().getAndSet(false);
-            lock.unlock();
+            lock.writeLock().unlock();
             return doReload;
         }
         return false;
     }
 
     public Stream<ServiceVisitorDelegate.ServiceVisitor> current() {
-        lock.lock();
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             return postStartup.serviceDelegates().values().stream()
-                    .onClose(lock::unlock)
+                    .onClose(lock.writeLock()::unlock)
                     .flatMap(s -> s.visitors().values().stream())
                     // re-register any service visitor delegates that are
                     // reloadable, where the context will be recreated, such
@@ -87,6 +87,7 @@ public class FederatedGraphQlStateHolder {
 
     public boolean waitForAllRegistrations() {
         if (!awaitPreStartup()) {
+            log.error("Could not wait for federated pre-startup registration.");
             return false;
         }
 
@@ -95,7 +96,7 @@ public class FederatedGraphQlStateHolder {
     }
 
     public void registerStartupTask(FederatedGraphQlState.StartupTask startupTask) {
-        lock.lock();
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PreStartup preStartup) {
             FederatedGraphQlState.IntermediaryStartup startup = new FederatedGraphQlState.IntermediaryStartup();
             appState.set(startup);
@@ -108,35 +109,38 @@ public class FederatedGraphQlStateHolder {
             }
         }
         this.federatedDynamicGraphQlSource.setReload();
-        lock.unlock();
+        lock.writeLock().unlock();
     }
 
     public void registerServiceDelegate(ServiceVisitorDelegate serviceDelegate) {
-        lock.lock();
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             postStartup.registerRefresh(serviceDelegate);
         }
-        lock.unlock();
+        lock.writeLock().unlock();
     }
 
     public void remove(FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId serviceInstanceId) {
-        lock.lock();
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             postStartup.remove(serviceInstanceId);
             this.reloadIndicator.setReload();
         }
-        lock.unlock();
+        lock.writeLock().unlock();
     }
 
     public void removeExpiredServices() {
-        lock.lock();
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             postStartup.removeExpiredServices();
         }
-        lock.unlock();
+        lock.writeLock().unlock();
     }
 
-    public ServiceVisitorDelegate getService(ServiceInstance s) {
-        return null;
+    public Optional<ServiceVisitorDelegate> getService(ServiceInstance s) {
+        if (appState.getAcquire() instanceof FederatedGraphQlState.PostStartup postStartup)
+            return postStartup.getByServiceId(s);
+
+        return Optional.empty();
     }
 }

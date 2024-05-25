@@ -4,6 +4,7 @@ import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetche
 import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.assert_util.AssertUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -71,6 +72,11 @@ public interface FederatedGraphQlState {
                     new DelayQueue<>()
             );
             this.callServiceAgain.addAll(this.services.values());
+        }
+
+        public Optional<ServiceVisitorDelegate> getByServiceId(ServiceInstance serviceInstance) {
+            return serviceDelegates.values().stream().filter(s -> s.host().host().host().equals(serviceInstance.getHost()))
+                    .findAny();
         }
 
         public void registerRefresh(ServiceVisitorDelegate serviceDelegate) {
@@ -150,8 +156,6 @@ public interface FederatedGraphQlState {
                     })
                     .orElseThrow(RuntimeException::new));
         }
-
-
     }
 
 }
