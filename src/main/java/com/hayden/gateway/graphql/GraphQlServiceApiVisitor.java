@@ -4,6 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
+import com.hayden.graphql.federated.transport.federated_transport.FederatedItemGraphQlTransport;
+import com.hayden.graphql.federated.transport.fetcher_transport.FetcherGraphQlTransport;
+import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.graphql.models.visitor.model.*;
 import com.hayden.utilitymodule.result.Agg;
@@ -21,6 +24,7 @@ import org.junit.Assert;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+
 
 /**
  * The API actions are pull, as the gateway only registers schema from servers it already knows from service
