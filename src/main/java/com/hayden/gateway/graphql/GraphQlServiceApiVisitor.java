@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
+import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -66,7 +66,7 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
             if (aggregateResponse instanceof GraphQlServiceVisitorResponse r) {
                 this.responses.addAll(r.responses());
             } else {
-                Assert.fail("Could not merge together different types of aggregate responses.");
+                Assert.isTrue(false, "Could not merge together different types of aggregate responses.");
             }
         }
     }
