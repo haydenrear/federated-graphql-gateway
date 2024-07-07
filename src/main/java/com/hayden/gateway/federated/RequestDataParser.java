@@ -4,7 +4,6 @@ import com.hayden.graphql.models.client.ClientRequest;
 import com.hayden.graphql.models.federated.request.FederatedRequestData;
 import com.hayden.graphql.models.federated.request.FederatedRequestDataItem;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
-import org.apache.commons.lang.NotImplementedException;
 import org.springframework.graphql.ExecutionGraphQlRequest;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,7 @@ public class RequestDataParser {
     }
 
     public FederatedRequestData buildRequestData(ClientRequest request) {
-        throw new NotImplementedException("Client request not implemented!");
+        throw new RuntimeException("Client request not implemented!");
     }
 
 }

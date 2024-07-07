@@ -21,7 +21,6 @@ import com.hayden.utilitymodule.result.map.ResultCollectors;
 import com.hayden.utilitymodule.result.res.Responses;
 import graphql.schema.DataFetcher;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -169,7 +168,7 @@ public class DgsCompiler {
                                     : Result.err(new GraphQlFetcherFetcherClassesError(Error.fromMessage("Did not recognize compile result."))
                             ))
                             .flatMapResult(ig -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.get())))
-                            .orElseThrow(() -> new NotImplementedException("No other introspection implemented at this time, besides DGS, for schema!"));
+                            .orElseThrow(() -> new RuntimeException("No other introspection implemented at this time, besides DGS, for schema!"));
                 });
     }
 
@@ -276,7 +275,7 @@ public class DgsCompiler {
                     .cast();
         }
 
-        return Result.err(new GraphQlFetcherFetcherClassesError(new NotImplementedException("Found unsupported target type: %s for %s."
+        return Result.err(new GraphQlFetcherFetcherClassesError(new RuntimeException("Found unsupported target type: %s for %s."
                 .formatted(dataFetcher.sourceMetadata().targetType(), dataFetcher.id()))));
     }
 

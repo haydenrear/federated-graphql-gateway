@@ -9,7 +9,6 @@ import com.hayden.utilitymodule.result.Result;
 import com.hayden.utilitymodule.result.map.ResultCollectors;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -109,16 +108,16 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
 
     @Override
     public FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId id() {
-        throw new NotImplementedException("Composite is leaky...");
+        throw new RuntimeException("Composite is leaky...");
     }
 
     @Override
     public MessageDigestBytes digest() {
-        throw new NotImplementedException("Composite is leaky...");
+        throw new RuntimeException("Composite is leaky...");
     }
 
     @Override
     public boolean isReloadable() {
-        throw new NotImplementedException("Composite is leaky...");
+        throw new RuntimeException("Composite is leaky...");
     }
 }
