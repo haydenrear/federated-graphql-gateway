@@ -5,7 +5,7 @@ plugins {
 	id("com.hayden.discovery-app")
 	id("com.hayden.messaging")
 	id("com.hayden.docker-compose")
-	id("com.hayden.persistence")
+	id("com.hayden.jdbc-persistence")
 }
 
 description = "gateway"
