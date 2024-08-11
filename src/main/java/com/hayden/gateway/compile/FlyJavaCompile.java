@@ -5,7 +5,7 @@ import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
-import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.Nullable;
@@ -53,11 +53,11 @@ public class FlyJavaCompile {
         }
     }
 
-    public record CompileAndLoadError(Set<Error> errors)
+    public record CompileAndLoadError(Set<ErrorCollect> errors)
             implements AggregateError {
 
         public CompileAndLoadError(String error) {
-            this(Sets.newHashSet(Error.fromMessage(error)));
+            this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
         }
 
         @Override
@@ -97,9 +97,9 @@ public class FlyJavaCompile {
         log.info("Starting compilation... for path {}.", args.compilerIn());
         return doCompilation(found)
                 .doOnError(err -> log.error("Found compilation errors: {}.", err.errors))
-                .map(compileResultFound -> {
+                .flatMapResult(compileResultFound -> {
                     log.info("Compiled the following files: {}.", compileResultFound);
-                    return found.map(c -> {
+                    return found.flatMapResult(c -> {
                                 List<Class<?>> clzzes = compileFilesClzzes(args, c);
                                 var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
                                         .map(p -> p.process(c, clzzes))
@@ -107,15 +107,13 @@ public class FlyJavaCompile {
                                 return Result.from(new CompileAndLoadResult<>(
                                                 clzzes,
                                                 compileSourceWriterResultAggregateErrorResult
-                                                        .orElse(c)
+                                                        .orElseRes(c)
                                         ),
-                                        compileSourceWriterResultAggregateErrorResult.error()
+                                        compileSourceWriterResultAggregateErrorResult.error().get()
                                 );
                             })
-                            .orElse(Result.<CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult>, CompileAndLoadError>err(new CompileAndLoadError(
-                                    "Compile result was not found from file provider.")));
-                })
-                .orElseGet(() -> Result.err(new CompileAndLoadError("No compile sources found.")));
+                            .orElseErr(Result.err(new CompileAndLoadError("Compile result was not found from file provider.")));
+                });
     }
 
 
@@ -220,7 +218,7 @@ public class FlyJavaCompile {
 
     private static Result<CompileResult, CompileAndLoadError> doCompilation(
             Result<? extends CompilerSourceWriter.CompileSourceWriterResult, CompileAndLoadError> compileFiles) {
-        if (compileFiles.isEmpty()) {
+        if (compileFiles.r().isEmpty()) {
             return Result.err(new CompileAndLoadError("No files to compile found."));
         }
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -273,7 +271,7 @@ public class FlyJavaCompile {
                     new CompileAndLoadError(diagnostics.getDiagnostics().stream()
                             .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
                             .map(d -> d.getMessage(Locale.US))
-                            .map(Error::fromMessage)
+                            .map(ErrorCollect::fromMessage)
                             .collect(Collectors.toSet())
                     ));
         }

@@ -5,7 +5,7 @@ import com.hayden.graphql.models.GraphQlTarget;
 import com.hayden.graphql.models.visitor.datafetcher.DataFetcherSourceId;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;
 import com.hayden.utilitymodule.MapFunctions;
-import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.DataFetcher;
 import graphql.schema.FieldCoordinates;
@@ -96,7 +96,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
 
     @NotNull
-    private static Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>, Error> nextDataFetcherItem(
+    private static Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherData>, ErrorCollect> nextDataFetcherItem(
             Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetcherItem,
             Context.RegistriesContext ctx
     ) {
@@ -112,7 +112,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                  NoSuchMethodException |
                  InvocationTargetException e) {
             log.error("Error when building {}: {}.", fetcherItem.getValue().fetcher().getSimpleName(), e.getMessage());
-            return Result.err(e);
+            return Result.err(ErrorCollect.fromE(e));
         }
     }
 

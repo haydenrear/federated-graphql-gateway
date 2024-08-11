@@ -1,7 +1,7 @@
 package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
-import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +28,10 @@ public class CompilerSourceWriter {
     }
 
 
-    public <T, R extends CompileSourceWriterResult> Result<R, Error> writeFiles(T generate,
-                                                                                Function<T, Stream<CompileFileIn>> fileFn,
-                                                                                Function<Collection<ToCompileFile>, R> factory,
-                                                                                String writePath) {
+    public <T, R extends CompileSourceWriterResult> Result<R, ErrorCollect> writeFiles(T generate,
+                                                                                       Function<T, Stream<CompileFileIn>> fileFn,
+                                                                                       Function<Collection<ToCompileFile>, R> factory,
+                                                                                       String writePath) {
         // TODO: bubble error...
         return Result.ok(
                 factory.apply(fileFn.apply(generate)

@@ -6,7 +6,10 @@ import com.hayden.gateway.discovery.comm.FederatedGraphQlStateHolder;
 import com.hayden.gateway.discovery.comm.GraphQlVisitorCommunicationComposite;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.gateway.graphql.Context;
+import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
+import com.hayden.utilitymodule.result.Result;
+import com.hayden.utilitymodule.result.error.AggregateError;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
@@ -70,10 +73,14 @@ public class Discovery implements ApplicationContextAware {
         );
 
         Optional.ofNullable(result.error())
-                .ifPresent(e -> log.error("Found error when running code registry builder: {}.", e.getMessages()));
+                .ifPresent(e -> log.error("Found error when running code registry builder: {}.", printError(e)));
 
         federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.CODE_REGISTRY);
         return codeRegistryBuilder;
+    }
+
+    private static @NotNull String printError(Result.Error<GraphQlServiceApiVisitor.GraphQlServiceVisitorError> e) {
+        return e.map(AggregateError::getMessage).orElse("No Error");
     }
 
     @DgsTypeDefinitionRegistry
@@ -89,7 +96,7 @@ public class Discovery implements ApplicationContextAware {
         );
 
         Optional.ofNullable(result.error())
-                .ifPresent(e -> log.error("Found error when running type registry: {}.", e.getMessages()));
+                .ifPresent(e -> log.error("Found error when running type registry: {}.", printError(e)));
 
         federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.TYPE_DEFINITION_REGISTRY);
         return this.typeDefinitionRegistry;

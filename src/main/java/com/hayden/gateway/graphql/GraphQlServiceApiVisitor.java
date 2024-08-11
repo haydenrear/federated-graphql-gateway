@@ -4,14 +4,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
-import com.hayden.graphql.federated.transport.federated_transport.FederatedItemGraphQlTransport;
-import com.hayden.graphql.federated.transport.fetcher_transport.FetcherGraphQlTransport;
-import com.hayden.graphql.federated.transport.register.GraphQlRegistration;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.graphql.models.visitor.model.*;
 import com.hayden.utilitymodule.result.Agg;
 import com.hayden.utilitymodule.result.error.AggregateError;
-import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.res.Responses;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
@@ -39,11 +36,11 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
         BiConsumer<String, FederatedGraphQlServiceFetcherItemId> callback;
     }
 
-    record GraphQlServiceVisitorError(Set<Error> errors)
+    record GraphQlServiceVisitorError(Set<ErrorCollect> errors)
             implements AggregateError {
 
         public GraphQlServiceVisitorError(String error) {
-            this(Sets.newHashSet(Error.fromMessage(error)));
+            this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
         }
 
         public GraphQlServiceVisitorError() {

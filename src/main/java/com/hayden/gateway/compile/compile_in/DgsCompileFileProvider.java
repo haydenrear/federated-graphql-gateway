@@ -4,8 +4,7 @@ import com.hayden.gateway.compile.CompileArgs;
 import com.hayden.gateway.compile.CompilerSourceWriter;
 import com.hayden.gateway.compile.FlyJavaCompile;
 import com.hayden.utilitymodule.result.Agg;
-import com.hayden.utilitymodule.result.error.AggregateError;
-import com.hayden.utilitymodule.result.error.Error;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.Result;
 import com.netflix.graphql.dgs.codegen.CodeGen;
 import com.netflix.graphql.dgs.codegen.CodeGenConfig;
@@ -68,11 +67,11 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
     }
 
     private void addTys(DgsCompileResult out,
-                        Result<DgsCompileResult, Error> toAdd) {
+                        Result<DgsCompileResult, ErrorCollect> toAdd) {
         toAdd.ifPresent(out::add);
     }
 
-    private Result<DgsCompileResult, Error> addProjections(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, ErrorCollect> addProjections(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 dgs -> dgs.getClientProjections().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -80,7 +79,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Error> addConstants(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, ErrorCollect> addConstants(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 dgs -> dgs.getJavaConstants().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -107,7 +106,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         return codeGen.generate();
     }
 
-    private Result<DgsCompileResult, Error> addJavaDataFetchers(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, ErrorCollect> addJavaDataFetchers(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaDataFetchers().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -115,7 +114,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Error> addQueries(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, ErrorCollect> addQueries(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaQueryTypes().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
@@ -123,7 +122,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
         );
     }
 
-    private Result<DgsCompileResult, Error> addJavaDataTypes(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
+    private Result<DgsCompileResult, ErrorCollect> addJavaDataTypes(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {
         return sourceWriter.writeFiles(
                 generate,
                 g -> g.getJavaDataTypes().stream().map(CompileFileIn.JavaPoetCompileFileIn::new),
