@@ -157,7 +157,7 @@ public class DgsCompiler {
                     return writeToLocal(outputPath, nextGraphQlSchema.targetType(), nextGraphQlSchema.target());
                 })
                 .collect(ResultCollectors.from(new GraphQlModelWriteResult(), new GraphQlFetcherFetcherClassesError()))
-                .flatMapResultError(ignored -> {
+                .flatMapResult(ignored -> {
                     var loaded = dgsFlyCompileJava.compileAndLoad(
                             new FlyJavaCompile.PathCompileArgs(
                                     graphQlCompilerProperties.getSchemaOutput().toString(),
@@ -180,8 +180,10 @@ public class DgsCompiler {
                             .map(this::writeFetcherClasses)
                             .<Result<GraphQlDataFetcherAggregateWriteResult, GraphQlFetcherFetcherClassesError>>map(Result::castError)
                             .collect(ResultCollectors.from(new GraphQlDataFetcherAggregateWriteResult(), new GraphQlFetcherFetcherClassesError()))
-                            .flatMapResultError(this::compileAndLoad)
-                            .flatMapResultError(r -> collectToFetcher(dataFetcherGraphQlSource, r));
+                            .mapError(g -> new FlyJavaCompile.CompileAndLoadError(g.errors))
+                            .flatMapResult(this::compileAndLoad)
+                            .mapError(c -> new GraphQlFetcherFetcherClassesError(c.errors()))
+                            .flatMapResult(r -> collectToFetcher(dataFetcherGraphQlSource, r));
                 })
                 .collect(ResultCollectors.from(new GraphQlFetcherFetcherClassesResult(), new GraphQlFetcherFetcherClassesError()));
     }
