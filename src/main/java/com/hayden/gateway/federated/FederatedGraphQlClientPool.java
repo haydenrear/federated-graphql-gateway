@@ -47,7 +47,7 @@ public class FederatedGraphQlClientPool {
     public Result<IFederatedGraphQlClientBuilder, ErrorCollect> client() {
         try {
             return Result.ok(this.builders.poll(connectTimeout, TimeUnit.SECONDS))
-                    .orError(() -> Result.Error.err(ErrorCollect.fromE(new ConnectionTimeoutException())))
+                    .orError(() -> Result.Err.err(ErrorCollect.fromE(new ConnectionTimeoutException())))
                     .castError();
         } catch (InterruptedException e) {
             return Result.err(ErrorCollect.fromMessage("Could not wait for builder in builders queue with message %s.".formatted(e.getMessage())));

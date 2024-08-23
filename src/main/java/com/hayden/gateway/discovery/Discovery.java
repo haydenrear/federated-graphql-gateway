@@ -79,7 +79,7 @@ public class Discovery implements ApplicationContextAware {
         return codeRegistryBuilder;
     }
 
-    private static @NotNull String printError(Result.Error<GraphQlServiceApiVisitor.GraphQlServiceVisitorError> e) {
+    private static @NotNull String printError(Result.Err<GraphQlServiceApiVisitor.GraphQlServiceVisitorError> e) {
         return e.map(AggregateError::getMessage).orElse("No Error");
     }
 
