@@ -18,6 +18,9 @@ dependencies {
 	api(project(":graphql"))
 }
 
+sourceSets { main { resources { exclude("schema-in/*.graphql") } }  }
+
+
 tasks.compileJava {
 	dependsOn("copyAgent")
 	// java -javaagent:build/agent/opentelemetry-javaagent.jar -jar build/libs/gateway-1.0.0.jar
