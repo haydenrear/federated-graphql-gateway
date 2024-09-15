@@ -1,5 +1,5 @@
 plugins {
-	id("com.hayden.graphql")
+	id("com.hayden.dgs-graphql")
 	id("com.hayden.spring-app")
 	id("com.hayden.observable-app")
 	id("com.hayden.discovery-app")
@@ -11,7 +11,6 @@ plugins {
 description = "gateway"
 
 tasks.register("prepareKotlinBuildScriptModel")
-
 
 dependencies {
 	implementation("com.squareup:javapoet:1.13.0")
