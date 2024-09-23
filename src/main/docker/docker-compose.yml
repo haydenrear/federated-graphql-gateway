@@ -1,5 +1,5 @@
 services:
-  postgres:
+  gateway-postgres:
     image: localhost:5001/postgres-pgvector
     container_name: gateway-postgres
     environment:
@@ -8,6 +8,6 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
-      - 5435:5432
+      - "5435:5432"
 volumes:
   postgres:
