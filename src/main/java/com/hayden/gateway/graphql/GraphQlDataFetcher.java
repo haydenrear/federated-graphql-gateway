@@ -11,6 +11,7 @@ import graphql.language.*;
 import graphql.schema.*;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -114,13 +115,13 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
         // federated data fetcher - graphql recursively calls for each field, then check for each field for each ty
         codeRegistryBuilder.defaultDataFetcher(environment -> new DataFetcher<Object>() {
 
-            record SourceResult(Object obj) {}
+            record SourceResult(@Nullable Object obj) {}
 
             Optional<SourceResult> getBySource(DataFetchingEnvironment dfe, String tn) {
                 return Optional.ofNullable(dfe.getSource())
                         .flatMap(s -> {
                             try {
-                                if (isNotDataFetcherClass(dfe, tn, s)) {
+                                if (isNotSourceClass(dfe, tn, s)) {
                                     return Optional.empty();
                                 }
                                 var f = s.getClass().getDeclaredField(dfe.getField().getName());
@@ -134,7 +135,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                         });
             }
 
-            private boolean isNotDataFetcherClass(DataFetchingEnvironment dfe, String tn, Object s) {
+            private boolean isNotSourceClass(DataFetchingEnvironment dfe, String tn, Object s) {
                 return !Objects.equals(tn, s.getClass().getSimpleName())
                        && !Objects.equals(getParentTypeName(dfe), s.getClass().getSimpleName());
             }
@@ -151,8 +152,8 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                                     .flatMap(df -> {
                                         try {
                                             return Optional.of(new SourceResult(df.get(environment)));
-                                        } catch (
-                                                Exception e) {
+                                        } catch (Exception e) {
+                                            log.error("{}", e.getMessage(), e);
                                             return Optional.empty();
                                         }
                                     })
@@ -224,17 +225,6 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
 
         return Stream.empty();
-    }
-
-    /**
-     * Makes the addition to the TypeDefinitionRegistry idempotent, so that if a service updates their schema then
-     * when the timer runs out and it's updated it will clear out the old implementation and add the new implementation.
-     * @param toMergeData
-     */
-    private void deleteCurrent(TypeDefinitionRegistry toMergeData, TypeDefinitionRegistry toMergeInto) {
-        toMergeData.types()
-                .forEach((typeKey, typeValue) -> toMergeInto.getType(typeKey)
-                        .ifPresent(td -> toMergeInto.remove(typeKey, td)));
     }
 
     @Override
