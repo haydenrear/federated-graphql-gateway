@@ -57,7 +57,9 @@ public class FederatedGraphQlStateHolder {
         lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             return postStartup.serviceDelegates().values().stream()
-                    .sorted(Comparator.<ServiceVisitorDelegate, String>comparing(s -> s.host().host().host()))
+//                    TODO: there has to be an ordering here... for example if a service that depends on another
+//                      service gets compiled before that other service then it fails to compile because the classes aren't available or the schema isn't available.
+                    .sorted(Comparator.comparing(s -> s.host().host().host()))
                     .onClose(lock.writeLock()::unlock)
                     .flatMap(s -> s.visitors().values().stream())
                     // re-register any service visitor delegates that are
