@@ -56,13 +56,14 @@ public class GraphQlServiceProvider {
                         .findAny()
                         .map(id -> new ServiceVisitorDelegate(
                                 id,
-                                MapFunctions.CollectMap(
+                                MapFunctions.Collect(
                                         body.visitorModels().stream()
                                                 .filter(Objects::nonNull)
                                                 .filter(v -> v.version().equals(version))
                                                 .map(factory::from)
                                                 .flatMap(Optional::stream)
-                                                .map(e -> Map.entry(e.visitor().getClass(), e))
+                                                .map(e -> Map.entry(e.visitor().getClass(), e)),
+                                        new HashMap<>()
                                 ),
                                 new DelayedService(id, discoveryProperties.getDiscoveryPingSeconds()),
                                 body.digest()

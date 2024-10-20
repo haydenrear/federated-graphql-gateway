@@ -3,6 +3,10 @@ type Query @extends {
     testIn: TestIn
 }
 
+type TestIn {
+    testInValue: Int
+}
+
 type AnotherQuery @extends {
     tDataFetcher: TestIn
 }
@@ -11,9 +15,6 @@ type Mutation {
     addTestIn(inValue: Int): TestIn
 }
 
-type TestIn {
-    testInValue: Int
-}
 
 type Tick {
     id: ID
@@ -52,3 +53,5 @@ type TickEdge {
 input TickEdgeInput {
     value: String!
 }
+
+

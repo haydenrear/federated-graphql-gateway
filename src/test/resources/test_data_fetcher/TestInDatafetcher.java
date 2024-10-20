@@ -13,10 +13,12 @@ public class TestInDatafetcher implements DataFetcher<TestIn> {
     public TestInDatafetcher() {
     }
 
-    @DgsData(
-            parentType = "Query",
-            field = "testIn"
-    )
+    @DgsData.List({
+            @DgsData(parentType = "Query",
+                     field = "testIn"),
+            @DgsData(parentType = "DataFetcherValue",
+                     field = "getTestIn"),
+    })
     public TestIn getTestIn(DataFetchingEnvironment var1) {
         return new TestIn(1);
     }

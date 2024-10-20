@@ -64,6 +64,8 @@ public class SchemaBuilderTest {
 
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId id;
     private static FederatedGraphQlServiceFetcherItemId fetcherItemId;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId protoId;
+    private static FederatedGraphQlServiceFetcherItemId protoFetcherItemId;
     private static MimeType files;
     @MockBean
     private DiscoveryClient discoveryClient;
@@ -76,6 +78,8 @@ public class SchemaBuilderTest {
 
     @Mock
     private ServiceInstance serviceInstance;
+    @Mock
+    private ServiceInstance protoServiceInstance;
     @Autowired
     private FederatedDynamicGraphQlSource federatedDynamicGraphQlSource;
     @Autowired
@@ -89,18 +93,25 @@ public class SchemaBuilderTest {
 
 
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId serviceId;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId protoServiceId;
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId serviceInstanceId;
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId protoServiceInstanceId;
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId federated;
-    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost host = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost("localhost");
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost host = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost("test");
+    private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost protoHost = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlHost("proto");
 
     static {
         files = new MimeType("files", "*");
         serviceId
                 = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId("fetch");
+        protoServiceId
+                = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceId("proto-fetch");
         federated
                 = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(files, "fetch", serviceId);
         serviceInstanceId
                 = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId(serviceId, host);
+        protoServiceInstanceId
+                = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId(protoServiceId, protoHost);
     }
 
 
@@ -118,20 +129,31 @@ public class SchemaBuilderTest {
                 UUID.randomUUID().toString(),
                 serviceId
         );
+        protoId = new FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId(
+                files,
+                UUID.randomUUID().toString(),
+                protoServiceId
+        );
         fetcherItemId = new FederatedGraphQlServiceFetcherItemId(
                 id,
                 serviceInstanceId
         );
+        protoFetcherItemId = new FederatedGraphQlServiceFetcherItemId(
+                id,
+                protoServiceInstanceId
+        );
 
         Mockito.when(serviceInstance.getHost()).thenReturn("test");
-        Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(serviceInstance), new ArrayList<>());
+        Mockito.when(protoServiceInstance.getHost()).thenReturn("proto");
+        Mockito.when(discoveryClient.getInstances(any())).thenReturn(List.of(protoServiceInstance, serviceInstance), new ArrayList<>());
 
         var googleProtobuf = FileUtils.readFileToString(new File("src/test/resources/test_schemas/any_pb.graphql"), Charset.defaultCharset());
         var testSchema = FileUtils.readFileToString(new File("src/test/resources/test_schemas/test.graphql"), Charset.defaultCharset());
         var fetcher = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestInDatafetcher.java"), Charset.defaultCharset());
+        var fetcherTwo = FileUtils.readFileToString(new File("src/test/resources/test_data_fetcher/TestGoogleProtobuf.java"), Charset.defaultCharset());
 
-        mockServiceProvider(List.of(googleProtobuf, testSchema), fetcher);
-
+        mockServiceProvider("proto", protoServiceInstanceId, protoDataFetcher(List.of(googleProtobuf), fetcherTwo));
+        mockServiceProvider("test", serviceInstanceId, graphQlDataFetcher(List.of(testSchema), fetcher));
 
         assertThat(discovery.waitForWasInitialRegistration()).isTrue();
 
@@ -143,46 +165,83 @@ public class SchemaBuilderTest {
 
     @SneakyThrows
     @Test
-    public void testCompileLoadFetch() {
+    public void testFederated() {
+        addTestIn();
 
 
+        @Language("GraphQL") String q = """
+                query { federation { getTestIn { testInValue }, testProto { value, typeUrl} } }
+                """;
+
+        var out = queryExecutor.execute(q);
+        assertThat(((DefaultDgsQueryExecutor) queryExecutor).getSchema().get().getTypeMap())
+                .containsKey("GoogleProtobuf_Any");
+        Map<String, Map> outData = out.getData();
+        Assertions.nonNull(outData);
+
+        Map federation = outData.get("federation");
+        Assertions.nonNull(federation);
+        assertThat(federation).containsKey("getTestIn");
+        assertThat(federation).containsKey("testProto");
+
+        Map testIn = (Map) federation.get("getTestIn");
+        assertThat(testIn.get("testInValue")).isEqualTo(1);
+
+        Map testProto = (Map) federation.get("testProto");
+        assertThat(testProto.get("value")).isEqualTo("hello");
+        assertThat(testProto.get("typeUrl")).isEqualTo("hello");
+
+    }
+
+    private void addTestIn() {
         @Language("GraphQL") String mutation = """
                 mutation { addTestIn( inValue: 1 ) {  testInValue } }
                 """;
 
-        var out = queryExecutor.execute(mutation);
-        @Language("GraphQL") String testInQuery = "{ testIn { testInValue } }";
-        assertThat(((DefaultDgsQueryExecutor) queryExecutor).getSchema().get().getTypeMap())
-                .containsKey("GoogleProtobuf_Any");
-
-        Assertions.nonNull(out.getData());
-        doValidate(testInQuery);
-    }
-
-    private void doValidate(@Language("GraphQL") String testInQuery) {
-        ExecutionResult execute = queryExecutor.execute(testInQuery);
+        ExecutionResult execute = queryExecutor.execute(mutation);
         Map<String, Map> data = execute.getData();
-        assertThat(data.get("testIn").get("testInValue")).isEqualTo(1);
+        assertThat(data.get("addTestIn").get("testInValue")).isEqualTo(1);
     }
+
 
     @SneakyThrows
-    private void mockServiceProvider(List<String> schemas, String fetcher) {
-        Mockito.when(serviceProvider.getServiceVisitorDelegates(any()))
-                .thenReturn(Optional.of(
-                        new ServiceVisitorDelegate(serviceInstanceId,
-                                Map.of(
-                                        GraphQlDataFetcher.class, new ServiceVisitorDelegate.ServiceVisitor(graphQlDataFetcher(schemas, fetcher)),
-                                        GraphQlTransports.class, new ServiceVisitorDelegate.ServiceVisitor(graphTransport())
-                                ),
-                                new DelayedService(serviceInstanceId, 100),
-                                createDigest("hello")
-                        ))
-                );
+    private void mockServiceProvider(String host, FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId serviceInstanceId1, @NotNull final GraphQlDataFetcher visitor) {
+        Optional<ServiceVisitorDelegate> valueToReturn = Optional.of(
+                new ServiceVisitorDelegate(serviceInstanceId1,
+                        new HashMap<>() {{
+                            put(GraphQlDataFetcher.class, new ServiceVisitorDelegate.ServiceVisitor(visitor));
+                            put(GraphQlTransports.class, new ServiceVisitorDelegate.ServiceVisitor(graphTransport()));
+                        }},
+                        new DelayedService(serviceInstanceId1, 100),
+                        createDigest("hello")
+                ));
+        Mockito.when(serviceProvider.getServiceVisitorDelegates(host))
+                .thenReturn(valueToReturn);
+        Mockito.when(serviceProvider.getServiceVisitorDelegates(null, host))
+                .thenReturn(valueToReturn);
     }
 
     @SneakyThrows
     private static Digest.MessageDigestBytes createDigest(String hello) {
         return new Digest.MessageDigestBytes(MessageDigest.getInstance("MD5").digest(hello.getBytes()));
+    }
+    private static @NotNull GraphQlDataFetcher protoDataFetcher(List<String> schemas, String fetcher) {
+        return new GraphQlDataFetcher(
+                new GraphQlDataFetcherDiscoveryModel(
+                        protoFetcherItemId,
+                        schemas.stream()
+                                .map(schemaStr -> new GraphQlFederatedSchemaSource(GraphQlTarget.String, schemaStr))
+                                .toList(),
+                        List.of(
+                                new DataFetcherGraphQlSource(
+                                        "TestGoogleProtobuf",
+                                        Map.of(new DataFetcherSourceId("TestGoogleProtobuf", SourceType.DgsComponentJava, "GoogleProtobuf_Any", "testProto", files),
+                                                new DataSource("TestGoogleProtobuf", "com.netflix.gateway.generated.datafetchers", GraphQlTarget.String, fetcher))
+                                )),
+                        true
+                ),
+                createDigest("goodbye")
+        );
     }
 
     private static @NotNull GraphQlDataFetcher graphQlDataFetcher(List<String> schemas, String fetcher) {
@@ -195,7 +254,7 @@ public class SchemaBuilderTest {
                         List.of(
                                 new DataFetcherGraphQlSource(
                                         "TestInDatafetcher",
-                                        Map.of(new DataFetcherSourceId("TestInDatafetcher", SourceType.DgsComponentJava, "testIn", files),
+                                        Map.of(new DataFetcherSourceId("TestInDatafetcher", SourceType.DgsComponentJava, "TestIn", "testIn", files),
                                                 new DataSource("TestInDatafetcher", "com.netflix.gateway.generated.datafetchers", GraphQlTarget.String, fetcher))
                                 )),
                         true

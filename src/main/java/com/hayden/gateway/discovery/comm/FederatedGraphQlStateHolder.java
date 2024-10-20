@@ -57,6 +57,7 @@ public class FederatedGraphQlStateHolder {
         lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
             return postStartup.serviceDelegates().values().stream()
+                    .sorted(Comparator.<ServiceVisitorDelegate, String>comparing(s -> s.host().host().host()))
                     .onClose(lock.writeLock()::unlock)
                     .flatMap(s -> s.visitors().values().stream())
                     // re-register any service visitor delegates that are

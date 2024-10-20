@@ -7,6 +7,7 @@ import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.result.Result;
 import com.hayden.utilitymodule.result.map.ResultCollectors;
+import com.netflix.graphql.dgs.internal.method.MethodDataFetcherFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +31,8 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     private GraphQlServiceProvider graphQlServiceProvider;
     @Autowired
     private FederatedGraphQlStateHolder stateHolder;
+    @Autowired
+    private MethodDataFetcherFactory methodDataFetcherFactory;
 
     @EventListener
     public void onApplicationEvent(@NotNull HealthEvent.FailedHealthEvent event) {

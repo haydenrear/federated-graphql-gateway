@@ -10,9 +10,11 @@ import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.utilitymodule.result.Result;
 import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
+import graphql.GraphQLError;
 import graphql.schema.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;
@@ -26,6 +28,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @DgsComponent
@@ -59,6 +64,12 @@ public class Discovery implements ApplicationContextAware {
         this.communication = communication;
     }
 
+    @Override
+    @Autowired
+    public void setApplicationContext(@NotNull ApplicationContext applicationContext) throws BeansException {
+        this.ctx = applicationContext;
+    }
+
     @DgsCodeRegistry
     public GraphQLCodeRegistry.Builder codeRegistryBuilder(GraphQLCodeRegistry.Builder codeRegistryBuilder,
                                                            TypeDefinitionRegistry registry) {
@@ -69,18 +80,12 @@ public class Discovery implements ApplicationContextAware {
                         codegenContext,
                         new Context.GraphQlTransportContext(new ArrayList<>()),
                         this.ctx
-                )
-        );
+                ));
 
-        Optional.ofNullable(result.error())
-                .ifPresent(e -> log.error("Found error when running code registry builder: {}.", printError(e)));
+        logErrors(result);
 
         federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.CODE_REGISTRY);
         return codeRegistryBuilder;
-    }
-
-    private static @NotNull String printError(Result.Err<GraphQlServiceApiVisitor.GraphQlServiceVisitorError> e) {
-        return e.map(AggregateError::getMessage).orElse("No Error");
     }
 
     @DgsTypeDefinitionRegistry
@@ -95,16 +100,22 @@ public class Discovery implements ApplicationContextAware {
                 )
         );
 
-        Optional.ofNullable(result.error())
-                .ifPresent(e -> log.error("Found error when running type registry: {}.", printError(e)));
+        logErrors(result);
 
         federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.TYPE_DEFINITION_REGISTRY);
         return this.typeDefinitionRegistry;
     }
 
-    @Override
-    @Autowired
-    public void setApplicationContext(@NotNull ApplicationContext applicationContext) throws BeansException {
-        this.ctx = applicationContext;
+    private static void logErrors(Result<GraphQlServiceApiVisitor.GraphQlServiceVisitorResponse, GraphQlServiceApiVisitor.GraphQlServiceVisitorError> result) {
+        Optional.ofNullable(result.error())
+                .filter(Result.ResultTy::isPresent)
+                .stream()
+                .flatMap(e -> !e.get().errors().isEmpty() ? Stream.of(e.get().errors()) : Stream.empty())
+                .findAny()
+                .ifPresent(e -> log.error("Found error when running code registry builder: {}.", printError(e)));
+    }
+
+    private static @NotNull String printError(Set<ErrorCollect> e) {
+        return e.stream().map(g -> g.getMessage()).collect(Collectors.joining(", "));
     }
 }

@@ -25,7 +25,7 @@ class JavaCompileDgsTest {
 
     @Test
     void compileAndLoad() {
-        var loaded = dgsFlyCompileJava.compileAndLoad(new FlyJavaCompile.PathCompileArgs("src/test/resources/test_schemas", "dgs_in"));
+        var loaded = dgsFlyCompileJava.compileAndLoad(new FlyJavaCompile.PathCompileArgs("src/test/resources/single_test_schema", "dgs_in"));
         assertThat(loaded.r().get().classesCreated().size()).isEqualTo(49);
     }
 }

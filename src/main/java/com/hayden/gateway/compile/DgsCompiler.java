@@ -143,10 +143,10 @@ public class DgsCompiler {
 
         var result = collectToFetcherClassesResult(dgsCompile, dataFetcherCompile);
 
-        return Result.from(
-                    result.r(),
-                    result.error()
-                );
+        FileUtils.deleteFilesRecursive(this.graphQlCompilerProperties.getCompilerIn());
+        FileUtils.deleteFilesRecursive(this.graphQlCompilerProperties.getSchemaOutput());
+
+        return Result.from(result.r(), result.error());
     }
 
 

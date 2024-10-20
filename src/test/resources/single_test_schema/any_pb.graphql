@@ -1,0 +1,9 @@
+type GoogleProtobuf_Any {
+  typeUrl: String!
+  value: String!
+}
+
+input GoogleProtobuf_AnyInput {
+  typeUrl: String
+  value: String
+}
