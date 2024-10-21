@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 public record DeleteSchemaApiVisitor(@Delegate DeleteSchemaApiVisitorModel deleteModel, MessageDigestBytes digest) implements GraphQlServiceApiVisitor {
 
     @Override
-    public boolean remove() {
+    public boolean onRemoved() {
         return true;
     }
 

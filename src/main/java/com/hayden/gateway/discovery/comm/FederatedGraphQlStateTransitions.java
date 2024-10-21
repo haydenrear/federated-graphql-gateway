@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class FederatedGraphQlStateHolder {
+public class FederatedGraphQlStateTransitions {
 
     private static final AtomicReference<FederatedGraphQlState> appState = new AtomicReference<>(new FederatedGraphQlState.PreStartup());
     private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -35,8 +35,8 @@ public class FederatedGraphQlStateHolder {
     }
 
     public boolean doReload() {
+        lock.writeLock().lock();
         if (appState.get() instanceof FederatedGraphQlState.PostStartup postStartup) {
-            lock.writeLock().lock();
             boolean anyReload = postStartup.serviceDelegates().values().stream()
                     .flatMap(s -> s.visitors().values().stream())
                     .anyMatch(s -> !s.registered().get());
@@ -50,6 +50,7 @@ public class FederatedGraphQlStateHolder {
             lock.writeLock().unlock();
             return doReload;
         }
+        lock.writeLock().unlock();
         return false;
     }
 
@@ -69,6 +70,7 @@ public class FederatedGraphQlStateHolder {
                     .filter(s -> s.registered().getAndSet(true));
         }
 
+        lock.writeLock().unlock();
         return Stream.empty();
     }
 
@@ -100,17 +102,25 @@ public class FederatedGraphQlStateHolder {
 
     public void registerStartupTask(FederatedGraphQlState.StartupTask startupTask) {
         lock.writeLock().lock();
+        // if in PreStartup state then transition to Intermediary step
         if (appState.get() instanceof FederatedGraphQlState.PreStartup preStartup) {
             FederatedGraphQlState.IntermediaryStartup startup = new FederatedGraphQlState.IntermediaryStartup();
             appState.set(startup);
             startup.countdown(startupTask);
             preStartup.countDownLatch().countDown();
-        } else if (appState.get() instanceof FederatedGraphQlState.IntermediaryStartup intermediaryStartup)  {
+        } else if (appState.get() instanceof FederatedGraphQlState.IntermediaryStartup intermediaryStartup) {
+            // if in intermediary step, register next Intermediary
             intermediaryStartup.countdown(startupTask);
+
+            // if last intermediary, register PostStartup step
             if (intermediaryStartup.startupTasksDone()) {
                 appState.set(new FederatedGraphQlState.PostStartup(new HashMap<>()));
             }
         }
+
+        // assume startup tasks affect GraphQlSource - idempotent if not ran...
+        // means next time a graphQl query runs the ServiceVisitorDelegates will be
+        // called again, supposed to be @Idempotent ?.
         this.federatedDynamicGraphQlSource.setReload();
         lock.writeLock().unlock();
     }

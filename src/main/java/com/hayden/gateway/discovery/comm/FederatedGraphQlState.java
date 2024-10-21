@@ -55,7 +55,7 @@ public interface FederatedGraphQlState {
 
         public boolean awaitForStartupTask(StartupTask startupTask) {
             Assert.isTrue(completed.containsKey(startupTask), "Did not contain :%s.".formatted(startupTask));
-            return FederatedGraphQlStateHolder.awaitLatch(completed.get(startupTask), 90);
+            return FederatedGraphQlStateTransitions.awaitLatch(completed.get(startupTask), 90);
         }
 
     }
@@ -120,8 +120,7 @@ public interface FederatedGraphQlState {
 
         public void remove(FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceInstanceId serviceInstanceId) {
             var removed = this.serviceDelegates().remove(serviceInstanceId);
-            removed.remove();
-            removed.visitors().values().forEach(ServiceVisitorDelegate.ServiceVisitor::remove);
+            removed.onRemoved();
             dirty.set(true);
         }
 

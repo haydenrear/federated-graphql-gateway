@@ -18,7 +18,7 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDi
     }
 
     @Override
-    public boolean remove() {
+    public boolean onRemoved() {
         removeCallback.callback.accept(id().host().host(), model.serviceId());
         return true;
     }

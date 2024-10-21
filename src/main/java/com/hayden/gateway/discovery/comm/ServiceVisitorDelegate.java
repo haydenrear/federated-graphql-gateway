@@ -27,8 +27,8 @@ public record ServiceVisitorDelegate(
         }
     }
 
-    public void remove() {
-        this.visitors.values().forEach(ServiceVisitor::remove);
+    public void onRemoved() {
+        this.visitors.values().forEach(ServiceVisitor::onRemoved);
     }
 
 }

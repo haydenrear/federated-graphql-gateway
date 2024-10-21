@@ -33,7 +33,7 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
     }
 
     @Override
-    public boolean remove() {
+    public boolean onRemoved() {
         removeCallback.callback.accept(id().host().host(), model.serviceId());
         return true;
     }
@@ -121,12 +121,16 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                 return Optional.ofNullable(dfe.getSource())
                         .flatMap(s -> {
                             try {
-                                if (isNotSourceClass(dfe, tn, s)) {
+//                                TODO: why does !containsKey fail? Is this a problem?
+                                if (s instanceof Map m && m.get(dfe.getField().getName()) != null) {
+                                    return Optional.of(new SourceResult(m.get(dfe.getField().getName())));
+                                } else if (isNotSourceClass(dfe, tn, s)) {
                                     return Optional.empty();
+                                } else {
+                                    var f = s.getClass().getDeclaredField(dfe.getField().getName());
+                                    f.trySetAccessible();
+                                    return Optional.of(new SourceResult(f.get(s)));
                                 }
-                                var f = s.getClass().getDeclaredField(dfe.getField().getName());
-                                f.trySetAccessible();
-                                return Optional.of(new SourceResult(f.get(s)));
                             } catch (Exception ex) {
                                 log.debug("{}", ex.getMessage(), ex);
                             }
@@ -276,7 +280,6 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
                             FieldCoordinates.coordinates("Query", sourceId.fieldName()),
                             fetcherData.fetcher()
                     );
-                    sourceId.dataFetcherTypeName();
                 });
 
     }

@@ -30,7 +30,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     @Autowired
     private GraphQlServiceProvider graphQlServiceProvider;
     @Autowired
-    private FederatedGraphQlStateHolder stateHolder;
+    private FederatedGraphQlStateTransitions stateHolder;
     @Autowired
     private MethodDataFetcherFactory methodDataFetcherFactory;
 
@@ -105,7 +105,7 @@ public class GraphQlVisitorCommunicationComposite implements GraphQlServiceApiVi
     }
 
     @Override
-    public boolean remove() {
+    public boolean onRemoved() {
         return false;
     }
 

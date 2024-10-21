@@ -2,19 +2,17 @@ package com.hayden.gateway.discovery;
 
 import com.hayden.gateway.compile.DgsCompiler;
 import com.hayden.gateway.discovery.comm.FederatedGraphQlState;
-import com.hayden.gateway.discovery.comm.FederatedGraphQlStateHolder;
+import com.hayden.gateway.discovery.comm.FederatedGraphQlStateTransitions;
 import com.hayden.gateway.discovery.comm.GraphQlVisitorCommunicationComposite;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.utilitymodule.result.Result;
-import com.hayden.utilitymodule.result.error.AggregateError;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
-import graphql.GraphQLError;
 import graphql.schema.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import lombok.experimental.Delegate;
@@ -47,7 +45,7 @@ public class Discovery implements ApplicationContextAware {
     private final MimeTypeRegistry mimetypeRegistry;
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
-    private final FederatedGraphQlStateHolder federatedGraphQlStateHolder;
+    private final FederatedGraphQlStateTransitions federatedGraphQlStateTransitions;
 
 
 
@@ -55,8 +53,8 @@ public class Discovery implements ApplicationContextAware {
                      MimeTypeRegistry mimetypeRegistry,
                      DgsCompiler dgsCompiler,
                      GraphQlVisitorCommunicationComposite communication,
-                     FederatedGraphQlStateHolder federatedGraphQlStateHolder) {
-        this.federatedGraphQlStateHolder = federatedGraphQlStateHolder;
+                     FederatedGraphQlStateTransitions federatedGraphQlStateTransitions) {
+        this.federatedGraphQlStateTransitions = federatedGraphQlStateTransitions;
         this.typeDefinitionRegistry = new TypeDefinitionRegistry();
         this.codegenContext = new Context.CodegenContext(dgsCompiler);
         this.mimetypeRegistry = mimetypeRegistry;
@@ -84,7 +82,7 @@ public class Discovery implements ApplicationContextAware {
 
         logErrors(result);
 
-        federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.CODE_REGISTRY);
+        federatedGraphQlStateTransitions.registerStartupTask(FederatedGraphQlState.StartupTask.CODE_REGISTRY);
         return codeRegistryBuilder;
     }
 
@@ -102,7 +100,7 @@ public class Discovery implements ApplicationContextAware {
 
         logErrors(result);
 
-        federatedGraphQlStateHolder.registerStartupTask(FederatedGraphQlState.StartupTask.TYPE_DEFINITION_REGISTRY);
+        federatedGraphQlStateTransitions.registerStartupTask(FederatedGraphQlState.StartupTask.TYPE_DEFINITION_REGISTRY);
         return this.typeDefinitionRegistry;
     }
 
