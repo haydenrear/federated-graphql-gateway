@@ -50,7 +50,8 @@ public class DgsCompiler {
 
     public record GraphQlDataFetcherWriteResult(Collection<CompilerSourceWriter.ToCompileFile> results, DataFetcherSourceId sourceId, DataSource dataSource) {}
 
-    public record GraphQlDataFetcherAggregateWriteResult(List<GraphQlDataFetcherWriteResult> source, ClientCodeCompileFileProvider.ClientCodeCompileProvider compileSourceWriterResult)
+    public record GraphQlDataFetcherAggregateWriteResult(List<GraphQlDataFetcherWriteResult> source,
+                                                         ClientCodeCompileFileProvider.ClientCodeCompileProvider compileSourceWriterResult)
             implements Responses.AggregateResponse {
 
         public GraphQlDataFetcherAggregateWriteResult() {
@@ -239,8 +240,7 @@ public class DgsCompiler {
                         w.sourceId,
                         new GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData(
                                 resultObj,
-                                w.dataSource.dataTemplate()
-                        )
+                                w.dataSource.dataTemplate())
                 )))
                 .findFirst()
                 .stream();
