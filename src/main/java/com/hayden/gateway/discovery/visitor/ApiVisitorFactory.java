@@ -1,6 +1,5 @@
-package com.hayden.gateway.discovery;
+package com.hayden.gateway.discovery.visitor;
 
-import com.hayden.gateway.discovery.comm.ServiceVisitorDelegate;
 import com.hayden.gateway.graphql.*;
 import com.hayden.graphql.models.visitor.schema.DeleteSchemaApiVisitorModel;
 import com.hayden.graphql.models.visitor.datafetcher.GraphQlDataFetcherDiscoveryModel;

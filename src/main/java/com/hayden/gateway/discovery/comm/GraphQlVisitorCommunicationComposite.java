@@ -4,6 +4,7 @@ import com.hayden.graphql.federated.transport.health.HealthEvent;
 import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
+import com.hayden.gateway.discovery.visitor.ServiceVisitorDelegate;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.result.Result;
 import com.hayden.utilitymodule.result.map.ResultCollectors;

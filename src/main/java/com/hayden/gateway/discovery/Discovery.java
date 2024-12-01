@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 @Component
 public class Discovery implements ApplicationContextAware {
 
-
     private ApplicationContext ctx;
 
     @Delegate
@@ -46,8 +45,6 @@ public class Discovery implements ApplicationContextAware {
     private final TypeDefinitionRegistry typeDefinitionRegistry;
     private final Context.CodegenContext codegenContext;
     private final FederatedGraphQlStateTransitions federatedGraphQlStateTransitions;
-
-
 
     public Discovery(FederatedGraphQlTransportRegistrar transportRegistrar,
                      MimeTypeRegistry mimetypeRegistry,
@@ -95,8 +92,7 @@ public class Discovery implements ApplicationContextAware {
                         codegenContext,
                         new Context.GraphQlTransportContext(new ArrayList<>()),
                         this.ctx
-                )
-        );
+                ));
 
         logErrors(result);
 

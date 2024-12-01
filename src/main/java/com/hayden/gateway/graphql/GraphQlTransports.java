@@ -19,14 +19,14 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDi
 
     @Override
     public boolean onRemoved() {
-        removeCallback.callback.accept(id().host().host(), model.serviceId());
+        removeCallback.getCallback().accept(id().host().host(), model.serviceId());
         return true;
     }
 
     @Override
     public Result<GraphQlServiceVisitorResponse, GraphQlServiceVisitorError> visit(FederatedGraphQlTransportRegistrar federatedGraphQlTransportRegistrar, Context.RegistriesContext registriesContext) {
         Optional.of(this.toTransportRegistration(this.model))
-                .ifPresent(m -> removeCallback.callback = federatedGraphQlTransportRegistrar.visit(m));
+                .ifPresent(m -> removeCallback.setCallback(federatedGraphQlTransportRegistrar.visit(m)));
 
         return Result.ok(new GraphQlServiceVisitorResponse("Unimplemented error scenario."));
     }
@@ -34,8 +34,7 @@ public record GraphQlTransports(@Delegate GraphQlTransportModel model, MessageDi
     public GraphQlRegistration toTransportRegistration(GraphQlTransportModel graphQlFetcherSource) {
         return new GraphQlRegistration.GraphQlTransportFederatedGraphQlRegistration(
            graphQlFetcherSource.transportBuilder().toTransport(),
-           graphQlFetcherSource.serviceId()
-        );
+           graphQlFetcherSource.serviceId());
     }
 
     @Override

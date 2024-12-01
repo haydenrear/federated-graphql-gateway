@@ -1,5 +1,6 @@
 package com.hayden.gateway.discovery.comm;
 
+import com.hayden.gateway.discovery.visitor.ServiceVisitorDelegate;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.assert_util.AssertUtil;

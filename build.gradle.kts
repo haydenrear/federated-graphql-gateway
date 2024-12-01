@@ -1,6 +1,6 @@
 plugins {
-	id("com.hayden.dgs-graphql")
 	id("com.hayden.spring-app")
+	id("com.hayden.dgs-graphql")
 	id("com.hayden.observable-app")
 	id("com.hayden.discovery-app")
 	id("com.hayden.messaging")

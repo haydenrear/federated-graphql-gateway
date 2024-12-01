@@ -1,8 +1,10 @@
 package com.hayden.gateway.discovery.comm;
 
-import com.hayden.gateway.discovery.ApiVisitorFactory;
+import com.hayden.gateway.discovery.visitor.ApiVisitorFactory;
 import com.hayden.gateway.discovery.DiscoveryProperties;
+import com.hayden.graphql.federated.visitor_model.*;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
+import com.hayden.gateway.discovery.visitor.ServiceVisitorDelegate;
 import com.hayden.graphql.models.visitor.model.Digest;
 import com.hayden.graphql.models.visitor.model.Id;
 import com.hayden.graphql.models.visitor.model.VisitorModel;
@@ -26,6 +28,7 @@ public class GraphQlServiceProvider {
 
     private final ApiVisitorFactory factory;
     private final DiscoveryProperties discoveryProperties;
+    private final ChangeVisitorModelService changeVisitorModelService;
 
     @Value("${federated.version:0.0.1}")
     private String version;
@@ -49,7 +52,7 @@ public class GraphQlServiceProvider {
     }
 
     public Optional<ServiceVisitorDelegate> getServiceVisitorDelegates(@Nullable ServiceVisitorDelegate delegate, String host) {
-        return Optional.of(callFederatedService(delegate, host))
+        Optional<ServiceVisitorDelegate> definitelyAnOptional = Optional.of(callFederatedService(delegate, host))
                 .filter(r -> r.getStatusCode().is2xxSuccessful())
                 .flatMap(r -> Optional.ofNullable(r.getBody()))
                 .flatMap(body -> body.visitorModels().stream().map(Id::id)
@@ -68,6 +71,36 @@ public class GraphQlServiceProvider {
                                 new DelayedService(id, discoveryProperties.getDiscoveryPingSeconds()),
                                 body.digest()
                         )));
+
+        definitelyAnOptional.ifPresent(this::registerChangesToNetworkingInfo);
+
+        return definitelyAnOptional;
+    }
+
+    private void registerChangesToNetworkingInfo(ServiceVisitorDelegate svd) {
+//        svd.visitors().entrySet().stream()
+//                .flatMap(e -> new GatewayChangeVisitor() {
+//
+////                    private final AtomicBoolean doAction = new AtomicBoolean(true);
+//
+////                    public boolean doAction(VisitorModel model) {
+////                        return doAction.compareAndSet(true, false);
+////                    }
+//
+//                    @Override
+//                    public boolean doRemove() {
+//                        return true;
+//                    }
+//
+//                    @Override
+//                    public ChangeVisitorModelServiceImpl.VisitorModelsContext commandIf(ChangeVisitorModelServiceImpl.VisitorModelsContext model,
+//                                                                                        ServiceVisitorDelegate.ServiceVisitorDelegateContext delegate) {
+//                        // TODO:
+//                        return model;
+//                    }
+//                })
+//                .forEach(this.changeVisitorModelService::register);
+
     }
 
     private static @NotNull ResponseEntity<VisitorModel.VisitorResponse> callFederatedService(@Nullable ServiceVisitorDelegate delegate, String host) {

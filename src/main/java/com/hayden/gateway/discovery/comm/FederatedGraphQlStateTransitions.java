@@ -1,6 +1,7 @@
 package com.hayden.gateway.discovery.comm;
 
 import com.hayden.graphql.federated.FederatedGraphQlSourceProvider;
+import com.hayden.gateway.discovery.visitor.ServiceVisitorDelegate;
 import com.hayden.graphql.federated.wiring.ReloadIndicator;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import lombok.RequiredArgsConstructor;
@@ -155,5 +156,13 @@ public class FederatedGraphQlStateTransitions {
             return postStartup.getByServiceId(s);
 
         return Optional.empty();
+    }
+
+    public List<ServiceVisitorDelegate> getServices() {
+        if (appState.getAcquire() instanceof FederatedGraphQlState.PostStartup postStartup)
+            return postStartup.serviceDelegates().values().stream().toList();
+
+
+        return new ArrayList<>();
     }
 }

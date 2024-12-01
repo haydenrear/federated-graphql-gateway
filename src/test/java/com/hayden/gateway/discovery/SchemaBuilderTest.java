@@ -4,7 +4,7 @@ import com.hayden.gateway.compile.FlyJavaCompile;
 import com.hayden.gateway.discovery.comm.DelayedService;
 import com.hayden.gateway.discovery.comm.GraphQlServiceProvider;
 import com.hayden.gateway.discovery.comm.GraphQlVisitorCommunicationComposite;
-import com.hayden.gateway.discovery.comm.ServiceVisitorDelegate;
+import com.hayden.gateway.discovery.visitor.ServiceVisitorDelegate;
 import com.hayden.gateway.federated.WebGraphQlFederatedExecutionService;
 import com.hayden.gateway.graphql.GraphQlDataFetcher;
 import com.hayden.gateway.graphql.GraphQlTransports;
