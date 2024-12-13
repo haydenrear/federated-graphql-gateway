@@ -3,10 +3,10 @@ package com.hayden.gateway.compile;
 import com.google.common.collect.Sets;
 import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.utilitymodule.reflection.PathUtil;
-import com.hayden.utilitymodule.result.Agg;
-import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.agg.Agg;
+import com.hayden.utilitymodule.result.agg.AggregateError;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
-import com.hayden.utilitymodule.result.res.Responses;
+import com.hayden.utilitymodule.result.agg.Responses;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +36,6 @@ public class FlyJavaCompile {
 
     private final CompileFileProvider<? extends CompilerSourceWriter.CompileSourceWriterResult> dgsCompileFileProvider;
 
-
-
     public record JavaFilesCompilerArgs(
             DgsCompiler.GraphQlDataFetcherAggregateWriteResult compileWriterIn, String compilerIn,
             @Nullable String compilerOut) implements CompileArgs {
@@ -54,14 +52,14 @@ public class FlyJavaCompile {
     }
 
     public record CompileAndLoadError(Set<ErrorCollect> errors)
-            implements AggregateError {
+            implements AggregateError.StdAggregateError {
 
         public CompileAndLoadError(String error) {
             this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
         }
 
         @Override
-        public void add(Agg aggregateResponse) {
+        public void addAgg(Agg aggregateResponse) {
             if (aggregateResponse instanceof CompileAndLoadError compileAndLoadError)
                 this.errors.addAll(compileAndLoadError.errors);
         }
@@ -69,7 +67,7 @@ public class FlyJavaCompile {
 
     public record CompileResult(Set<File> files) implements Responses.AggregateResponse {
         @Override
-        public void add(Agg t) {
+        public void addAgg(Agg t) {
             if (t instanceof CompileResult compileResult)
                 this.files.addAll(compileResult.files);
         }
@@ -79,8 +77,9 @@ public class FlyJavaCompile {
             implements Responses.AggregateResponse {
 
         @Override
-        public void add(Agg aggregateResponse) {
-            if (aggregateResponse instanceof CompileAndLoadResult<?> compileAndLoadResult)
+        public void addAgg(Agg aggregateResponse) {
+            if (aggregateResponse instanceof CompileAndLoadResult<?> compileAndLoadResult
+                    && this != compileAndLoadResult)
                 this.classesCreated.addAll(compileAndLoadResult.classesCreated);
         }
     }
@@ -109,8 +108,7 @@ public class FlyJavaCompile {
                                                 compileSourceWriterResultAggregateErrorResult
                                                         .orElseRes(c)
                                         ),
-                                        compileSourceWriterResultAggregateErrorResult.error().get()
-                                );
+                                        compileSourceWriterResultAggregateErrorResult.error().get());
                             })
                             .orElseErr(Result.err(new CompileAndLoadError("Compile result was not found from file provider.")));
                 });

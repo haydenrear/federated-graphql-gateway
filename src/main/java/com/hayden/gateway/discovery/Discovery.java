@@ -9,6 +9,7 @@ import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.utilitymodule.result.Result;
+import com.hayden.utilitymodule.result.ResultTy;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
@@ -102,7 +103,7 @@ public class Discovery implements ApplicationContextAware {
 
     private static void logErrors(Result<GraphQlServiceApiVisitor.GraphQlServiceVisitorResponse, GraphQlServiceApiVisitor.GraphQlServiceVisitorError> result) {
         Optional.ofNullable(result.error())
-                .filter(Result.ResultTy::isPresent)
+                .filter(ResultTy::isPresent)
                 .stream()
                 .flatMap(e -> !e.get().errors().isEmpty() ? Stream.of(e.get().errors()) : Stream.empty())
                 .findAny()

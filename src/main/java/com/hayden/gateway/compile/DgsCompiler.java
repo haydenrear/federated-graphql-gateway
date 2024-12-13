@@ -15,11 +15,13 @@ import com.hayden.utilitymodule.MapFunctions;
 import com.hayden.utilitymodule.io.FileUtils;
 import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.*;
-import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.agg.Agg;
+import com.hayden.utilitymodule.result.agg.AggregateError;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.map.ResultCollectors;
-import com.hayden.utilitymodule.result.res.Responses;
+import com.hayden.utilitymodule.result.agg.Responses;
 import graphql.schema.DataFetcher;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,24 +50,43 @@ public class DgsCompiler {
 
     public record GraphQlFetcherSourceResult(String typeName, Map<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData> fetchers) {}
 
-    public record GraphQlDataFetcherWriteResult(Collection<CompilerSourceWriter.ToCompileFile> results, DataFetcherSourceId sourceId, DataSource dataSource) {}
+    public record GraphQlDataFetcherWriteResultItem(Collection<CompilerSourceWriter.ToCompileFile> results, DataFetcherSourceId sourceId, DataSource dataSource) {}
 
-    public record GraphQlDataFetcherAggregateWriteResult(List<GraphQlDataFetcherWriteResult> source,
-                                                         ClientCodeCompileFileProvider.ClientCodeCompileProvider compileSourceWriterResult)
+    public record GraphQlDataFetcherWriteResult(List<GraphQlDataFetcherWriteResultItem> source)
             implements Responses.AggregateResponse {
 
-        public GraphQlDataFetcherAggregateWriteResult() {
-            this(Lists.newArrayList(), new ClientCodeCompileFileProvider.ClientCodeCompileProvider(new ArrayList<>()));
+        public GraphQlDataFetcherWriteResult() {
+            this(new ArrayList<>());
         }
 
         @Override
-        public void add(Agg aggregateResponse) {
-            if (aggregateResponse instanceof GraphQlDataFetcherAggregateWriteResult res) {
-                this.source().addAll(res.source);
-                this.compileSourceWriterResult.compileFiles().addAll(res.compileSourceWriterResult().compileFiles());
-                this.compileSourceWriterResult.codeGenResult().putAll(res.compileSourceWriterResult.codeGenResult());
+        public void addAgg(Agg t) {
+            if (t instanceof GraphQlDataFetcherWriteResult(List<GraphQlDataFetcherWriteResultItem> i))     {
+                this.source.addAll(i);
             }
         }
+
+    }
+
+    public record GraphQlDataFetcherAggregateWriteResult(GraphQlDataFetcherWriteResult source,
+                                                         ClientCodeCompileFileProvider.ClientCodeCompileProviderResult compileSourceWriterResult)
+            implements Responses.AggregateResponse {
+
+        public GraphQlDataFetcherAggregateWriteResult() {
+            this(new GraphQlDataFetcherWriteResult(), new ClientCodeCompileFileProvider.ClientCodeCompileProviderResult(new ArrayList<>()));
+        }
+
+        @Override
+        public void addAgg(Agg aggregateResponse) {
+            if (aggregateResponse instanceof GraphQlDataFetcherAggregateWriteResult(
+                    GraphQlDataFetcherWriteResult fetcherWriteResultSource,
+                    ClientCodeCompileFileProvider.ClientCodeCompileProviderResult sourceWriterResult
+            )) {
+                this.source.addAgg(fetcherWriteResultSource);
+                this.compileSourceWriterResult.addAgg(sourceWriterResult);
+            }
+        }
+
     }
 
     public record GraphQlModelWriteResult(List<Path> results) implements Responses.AggregateResponse {
@@ -79,16 +100,17 @@ public class DgsCompiler {
         }
 
         @Override
-        public void add(Agg aggregateResponse) {
-            if (aggregateResponse instanceof GraphQlModelWriteResult res) {
-                results.addAll(res.results);
+        public void addAgg(Agg aggregateResponse) {
+            if (aggregateResponse instanceof GraphQlModelWriteResult(List<Path> results1)) {
+                results.addAll(results1);
             }
         }
+
     }
 
     public record GraphQlFetcherFetcherClassesResult(List<GraphQlFetcherSourceResult> results,
-                                                     FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> compileLoadResult,
-                                                     FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult)
+                                                     @Nullable FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> compileLoadResult,
+                                                     @Nullable FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult)
             implements Responses.AggregateResponse {
 
         public GraphQlFetcherFetcherClassesResult(FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dataFetcherCompileLoadResult) {
@@ -104,14 +126,20 @@ public class DgsCompiler {
         }
 
         @Override
-        public void add(Agg aggregateResponse) {
-            if (aggregateResponse instanceof GraphQlFetcherFetcherClassesResult res) {
-                results.addAll(res.results);
+        public void addAgg(Agg aggregateResponse) {
+            if (aggregateResponse instanceof GraphQlFetcherFetcherClassesResult(
+                    List<GraphQlFetcherSourceResult> r,
+                    FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> clr,
+                    FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> dflr
+            ) ) {
+                results.addAll(r);
+                Optional.ofNullable(compileLoadResult).ifPresent(c -> c.addAgg(clr));
+                Optional.ofNullable(dataFetcherCompileLoadResult).ifPresent(c -> c.addAgg(dflr));
             }
         }
     }
 
-    public record GraphQlFetcherFetcherClassesError(Set<ErrorCollect> errors) implements AggregateError {
+    public record GraphQlFetcherFetcherClassesError(Set<ErrorCollect> errors) implements AggregateError.StdAggregateError {
         public GraphQlFetcherFetcherClassesError() {
             this(new HashSet<>());
         }
@@ -164,10 +192,11 @@ public class DgsCompiler {
                                     graphQlCompilerProperties.getSchemaOutput().toString(),
                                     graphQlCompilerProperties.getCompilerIn().toString()
                             ));
-                    return loaded.flatMapResultError(r -> r.writerResult() instanceof DgsCompileFileProvider.DgsCompileResult
+                    return loaded.flatMapResult(r -> r.writerResult() instanceof DgsCompileFileProvider.DgsCompileResult
                                     ? Result.ok(r.writerResult())
-                                    : Result.err(new GraphQlFetcherFetcherClassesError(ErrorCollect.fromMessage("Did not recognize compile result."))
-                            ))
+                                    : Result.err(new FlyJavaCompile.CompileAndLoadError(""))
+                            )
+                            .mapError(compileAndLoadError -> new GraphQlFetcherFetcherClassesError(ErrorCollect.fromMessage("Did not recognize compile result.")))
                             .flatMapResult(ig -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.r().get())));
                 });
     }
@@ -179,7 +208,6 @@ public class DgsCompiler {
                     return dataFetcherGraphQlSource.sources().entrySet()
                             .stream()
                             .map(this::writeFetcherClasses)
-                            .<Result<GraphQlDataFetcherAggregateWriteResult, GraphQlFetcherFetcherClassesError>>map(Result::castError)
                             .collect(ResultCollectors.from(new GraphQlDataFetcherAggregateWriteResult(), new GraphQlFetcherFetcherClassesError()))
                             .mapError(g -> new FlyJavaCompile.CompileAndLoadError(g.errors))
                             .flatMapResult(this::compileAndLoad)
@@ -202,11 +230,10 @@ public class DgsCompiler {
                             clzzes.stream()
                                     // TODO: is assignable from datafetcher or has DgsData
 //                                    .filter(DataFetcher.class::isAssignableFrom)
-                                    .map(c -> Map.entry(c.getSimpleName(), c))
-                    );
+                                    .map(c -> Map.entry(c.getSimpleName(), c)));
                     var agg = new FlyJavaCompile.CompileAndLoadError(Sets.newHashSet());
-                    if (provider instanceof ClientCodeCompileFileProvider.ClientCodeCompileProvider fileProvider) {
-                        return writeResult.source()
+                    if (provider instanceof ClientCodeCompileFileProvider.ClientCodeCompileProviderResult fileProvider) {
+                        return writeResult.source().source()
                                 .stream()
                                 .flatMap(w -> retrieveDataFetchers(w, clzzesByType))
                                 .collect(ResultCollectors.from(
@@ -230,7 +257,7 @@ public class DgsCompiler {
     }
 
     private static @NotNull Stream<Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData>, ErrorCollect>> retrieveDataFetchers(
-            GraphQlDataFetcherWriteResult w,
+            GraphQlDataFetcherWriteResultItem w,
             Map<String, List<Class<?>>> clzzesByType
     ) {
         return clzzesByType.get(w.sourceId.dataFetcherTypeName())
@@ -265,12 +292,12 @@ public class DgsCompiler {
         return Stream.of(dgsCompile, dataFetcherCompile)
                 .collect(ResultCollectors.from(fetcherClassesResult, new GraphQlFetcherFetcherClassesError()));
     }
-    private Result<ClientCodeCompileFileProvider.ClientCodeCompileProvider, GraphQlFetcherFetcherClassesError> writeCompileFiles(DataSource dataFetcher) {
+    private Result<ClientCodeCompileFileProvider.ClientCodeCompileProviderResult, GraphQlFetcherFetcherClassesError> writeCompileFiles(DataSource dataFetcher) {
         if (dataFetcher.sourceMetadata().targetType() == GraphQlTarget.String) {
             return compileSourceWriterResult.writeFiles(
                             dataFetcher,
                             o -> Stream.of(new CompileFileIn.ClientFileCompileFileIn(o)),
-                            ClientCodeCompileFileProvider.ClientCodeCompileProvider::new,
+                            ClientCodeCompileFileProvider.ClientCodeCompileProviderResult::new,
                             Paths.get(graphQlCompilerProperties.getCompilerIn().toString(), PathUtil.fromPackage(dataFetcher.sourceMetadata().packageName())).toString()
                     )
                     .castError();
@@ -300,7 +327,7 @@ public class DgsCompiler {
     }
 
     private static Result<GraphQlFetcherFetcherClassesResult, GraphQlFetcherFetcherClassesError> collectToFetcher(DataFetcherGraphQlSource dataFetcherGraphQlSource, FlyJavaCompile.CompileAndLoadResult<CompilerSourceWriter.CompileSourceWriterResult> r) {
-        if (r.writerResult() instanceof ClientCodeCompileFileProvider.ClientCodeCompileProvider clientCodeCompileProvider)
+        if (r.writerResult() instanceof ClientCodeCompileFileProvider.ClientCodeCompileProviderResult clientCodeCompileProvider)
             return Result.ok(new GraphQlFetcherFetcherClassesResult(
                     new GraphQlFetcherSourceResult(
                             dataFetcherGraphQlSource.typeName(),
@@ -312,8 +339,10 @@ public class DgsCompiler {
     private Result<GraphQlDataFetcherAggregateWriteResult, GraphQlFetcherFetcherClassesError> writeFetcherClasses(Map.Entry<DataFetcherSourceId, DataSource> sourceIdDataFetcher) {
         var dataFetcher = sourceIdDataFetcher.getValue();
         return writeCompileFiles(dataFetcher)
-                .map(writeResult -> Map.entry(writeResult, new GraphQlDataFetcherWriteResult(writeResult.compileFiles(), sourceIdDataFetcher.getKey(), sourceIdDataFetcher.getValue())))
-                .map(l -> new GraphQlDataFetcherAggregateWriteResult(Lists.newArrayList(l.getValue()), l.getKey()));
+                .map(writeResult -> Map.entry(writeResult, new GraphQlDataFetcherWriteResultItem(writeResult.compileFiles(), sourceIdDataFetcher.getKey(), sourceIdDataFetcher.getValue())))
+                .map(l -> new GraphQlDataFetcherAggregateWriteResult(
+                        new GraphQlDataFetcherWriteResult(Lists.newArrayList(l.getValue())),
+                        l.getKey()));
     }
 
 }

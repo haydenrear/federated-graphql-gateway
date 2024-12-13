@@ -6,10 +6,10 @@ import com.hayden.gateway.discovery.MimeTypeRegistry;
 import com.hayden.gateway.federated.FederatedGraphQlTransportRegistrar;
 import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetcherItemId;
 import com.hayden.graphql.models.visitor.model.*;
-import com.hayden.utilitymodule.result.Agg;
-import com.hayden.utilitymodule.result.error.AggregateError;
+import com.hayden.utilitymodule.result.agg.Agg;
+import com.hayden.utilitymodule.result.agg.AggregateError;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
-import com.hayden.utilitymodule.result.res.Responses;
+import com.hayden.utilitymodule.result.agg.Responses;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -37,7 +37,7 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
     }
 
     record GraphQlServiceVisitorError(Set<ErrorCollect> errors)
-            implements AggregateError {
+            implements AggregateError.StdAggregateError {
 
         public GraphQlServiceVisitorError(String error) {
             this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
@@ -59,7 +59,7 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
         }
 
         @Override
-        public void add(Agg aggregateResponse) {
+        public void addAgg(Agg aggregateResponse) {
             if (aggregateResponse instanceof GraphQlServiceVisitorResponse r) {
                 this.responses.addAll(r.responses());
             } else {

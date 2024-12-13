@@ -3,7 +3,7 @@ package com.hayden.gateway.compile.compile_in;
 import com.hayden.gateway.compile.CompileArgs;
 import com.hayden.gateway.compile.CompilerSourceWriter;
 import com.hayden.gateway.compile.FlyJavaCompile;
-import com.hayden.utilitymodule.result.Agg;
+import com.hayden.utilitymodule.result.agg.Agg;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
 import com.hayden.utilitymodule.result.Result;
 import com.netflix.graphql.dgs.codegen.CodeGen;
@@ -32,7 +32,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
                                    CodeGenResult codeGenResult) implements CompilerSourceWriter.CompileSourceWriterResult {
 
         @Override
-        public void add(Agg aggregateResponse) {
+        public void addAgg(Agg aggregateResponse) {
             if (aggregateResponse instanceof CompilerSourceWriter.CompileSourceWriterResult sourceWriterResult) {
                 this.compileFiles.addAll(sourceWriterResult.compileFiles());
             }
@@ -68,7 +68,7 @@ public class DgsCompileFileProvider implements CompileFileProvider<DgsCompileFil
 
     private void addTys(DgsCompileResult out,
                         Result<DgsCompileResult, ErrorCollect> toAdd) {
-        toAdd.ifPresent(out::add);
+        toAdd.ifPresent(out::addAgg);
     }
 
     private Result<DgsCompileResult, ErrorCollect> addProjections(CodeGenResult generate, FlyJavaCompile.PathCompileArgs compileWriterOut) {

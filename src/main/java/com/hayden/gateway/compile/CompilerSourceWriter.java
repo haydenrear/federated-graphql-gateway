@@ -2,7 +2,7 @@ package com.hayden.gateway.compile;
 
 import com.hayden.gateway.compile.compile_in.CompileFileIn;
 import com.hayden.utilitymodule.result.error.ErrorCollect;
-import com.hayden.utilitymodule.result.res.Responses;
+import com.hayden.utilitymodule.result.agg.Responses;
 import com.hayden.utilitymodule.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
