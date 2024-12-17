@@ -17,7 +17,7 @@ import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.*;
 import com.hayden.utilitymodule.result.agg.Agg;
 import com.hayden.utilitymodule.result.agg.AggregateError;
-import com.hayden.utilitymodule.result.error.ErrorCollect;
+import com.hayden.utilitymodule.result.error.SingleError;
 import com.hayden.utilitymodule.result.map.ResultCollectors;
 import com.hayden.utilitymodule.result.agg.Responses;
 import graphql.schema.DataFetcher;
@@ -139,18 +139,18 @@ public class DgsCompiler {
         }
     }
 
-    public record GraphQlFetcherFetcherClassesError(Set<ErrorCollect> errors) implements AggregateError.StdAggregateError {
+    public record GraphQlFetcherFetcherClassesError(Set<SingleError> errors) implements AggregateError.StdAggregateError {
         public GraphQlFetcherFetcherClassesError() {
             this(new HashSet<>());
         }
-        public GraphQlFetcherFetcherClassesError(ErrorCollect error) {
+        public GraphQlFetcherFetcherClassesError(SingleError error) {
             this(Sets.newHashSet(error));
         }
         public GraphQlFetcherFetcherClassesError(Throwable throwable) {
-            this(Sets.newHashSet(ErrorCollect.fromE(throwable)));
+            this(Sets.newHashSet(SingleError.fromE(throwable)));
         }
         @Override
-        public Set<ErrorCollect> errors() {
+        public Set<SingleError> errors() {
             return errors;
         }
     }
@@ -196,7 +196,7 @@ public class DgsCompiler {
                                     ? Result.ok(r.writerResult())
                                     : Result.err(new FlyJavaCompile.CompileAndLoadError(""))
                             )
-                            .mapError(compileAndLoadError -> new GraphQlFetcherFetcherClassesError(ErrorCollect.fromMessage("Did not recognize compile result.")))
+                            .mapError(compileAndLoadError -> new GraphQlFetcherFetcherClassesError(SingleError.fromMessage("Did not recognize compile result.")))
                             .flatMapResult(ig -> Result.ok(new GraphQlFetcherFetcherClassesResult(loaded.r().get())));
                 });
     }
@@ -251,12 +251,12 @@ public class DgsCompiler {
                                         }));
                     }
 
-                    agg.addError(ErrorCollect.fromMessage("Did not recognize file provider: %s.".formatted(provider.getClass().getName())));
+                    agg.addError(SingleError.fromMessage("Did not recognize file provider: %s.".formatted(provider.getClass().getName())));
                     return Result.err(agg);
                 });
     }
 
-    private static @NotNull Stream<Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData>, ErrorCollect>> retrieveDataFetchers(
+    private static @NotNull Stream<Result<Map.Entry<DataFetcherSourceId, GraphQlDataFetcherDiscoveryModel.DataFetcherMetaData>, SingleError>> retrieveDataFetchers(
             GraphQlDataFetcherWriteResultItem w,
             Map<String, List<Class<?>>> clzzesByType
     ) {
@@ -273,11 +273,11 @@ public class DgsCompiler {
                 .stream();
     }
 
-    private static @NotNull Stream<Result<Class<? extends DataFetcher<?>>, ErrorCollect>> toDataFetcherClzz(Class<?> c) {
+    private static @NotNull Stream<Result<Class<? extends DataFetcher<?>>, SingleError>> toDataFetcherClzz(Class<?> c) {
         try {
             return Stream.of(Result.ok((Class<? extends DataFetcher<?>>) c));
         } catch (ClassCastException dataFetcherClass) {
-            return Stream.of(Result.err(ErrorCollect.fromE(dataFetcherClass)));
+            return Stream.of(Result.err(SingleError.fromE(dataFetcherClass)));
         }
     }
 
@@ -333,7 +333,7 @@ public class DgsCompiler {
                             dataFetcherGraphQlSource.typeName(),
                             clientCodeCompileProvider.codeGenResult())
             ));
-        return Result.err(new GraphQlFetcherFetcherClassesError(ErrorCollect.fromMessage("Writer result was of unknown type when compiling client data fetchers..")));
+        return Result.err(new GraphQlFetcherFetcherClassesError(SingleError.fromMessage("Writer result was of unknown type when compiling client data fetchers..")));
     }
 
     private Result<GraphQlDataFetcherAggregateWriteResult, GraphQlFetcherFetcherClassesError> writeFetcherClasses(Map.Entry<DataFetcherSourceId, DataSource> sourceIdDataFetcher) {

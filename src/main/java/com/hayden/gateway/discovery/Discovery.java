@@ -9,8 +9,8 @@ import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.utilitymodule.result.Result;
-import com.hayden.utilitymodule.result.ResultTy;
-import com.hayden.utilitymodule.result.error.ErrorCollect;
+import com.hayden.utilitymodule.result.res_support.one.ResultTy;
+import com.hayden.utilitymodule.result.error.SingleError;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
@@ -110,7 +110,7 @@ public class Discovery implements ApplicationContextAware {
                 .ifPresent(e -> log.error("Found error when running code registry builder: {}.", printError(e)));
     }
 
-    private static @NotNull String printError(Set<ErrorCollect> e) {
+    private static @NotNull String printError(Set<SingleError> e) {
         return e.stream().map(g -> g.getMessage()).collect(Collectors.joining(", "));
     }
 }

@@ -3,8 +3,7 @@ package com.hayden.gateway.federated;
 import com.hayden.gateway.federated.pool.ConnectionTimeoutException;
 import com.hayden.graphql.federated.client.FederatedGraphQlClientBuilderHolder;
 import com.hayden.graphql.federated.client.IFederatedGraphQlClientBuilder;
-import com.hayden.utilitymodule.result.error.Err;
-import com.hayden.utilitymodule.result.error.ErrorCollect;
+import com.hayden.utilitymodule.result.error.SingleError;
 import com.hayden.utilitymodule.result.Result;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -45,13 +44,13 @@ public class FederatedGraphQlClientPool {
                 });
     }
 
-    public Result<IFederatedGraphQlClientBuilder, ErrorCollect> client() {
+    public Result<IFederatedGraphQlClientBuilder, SingleError> client() {
         try {
             return Result.ok(this.builders.poll(connectTimeout, TimeUnit.SECONDS))
-                    .orError(() -> Err.err(ErrorCollect.fromE(new ConnectionTimeoutException())))
+                    .or(() -> Result.err(SingleError.fromE(new ConnectionTimeoutException())))
                     .castError();
         } catch (InterruptedException e) {
-            return Result.err(ErrorCollect.fromMessage("Could not wait for builder in builders queue with message %s.".formatted(e.getMessage())));
+            return Result.err(SingleError.fromMessage("Could not wait for builder in builders queue with message %s.".formatted(e.getMessage())));
         }
     }
 

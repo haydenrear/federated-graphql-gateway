@@ -5,9 +5,11 @@ import com.hayden.gateway.compile.compile_in.CompileFileProvider;
 import com.hayden.utilitymodule.reflection.PathUtil;
 import com.hayden.utilitymodule.result.agg.Agg;
 import com.hayden.utilitymodule.result.agg.AggregateError;
-import com.hayden.utilitymodule.result.error.ErrorCollect;
+import com.hayden.utilitymodule.result.error.Err;
+import com.hayden.utilitymodule.result.error.SingleError;
 import com.hayden.utilitymodule.result.agg.Responses;
 import com.hayden.utilitymodule.result.Result;
+import com.hayden.utilitymodule.result.ok.Ok;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,11 +53,11 @@ public class FlyJavaCompile {
         }
     }
 
-    public record CompileAndLoadError(Set<ErrorCollect> errors)
+    public record CompileAndLoadError(Set<SingleError> errors)
             implements AggregateError.StdAggregateError {
 
         public CompileAndLoadError(String error) {
-            this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
+            this(Sets.newHashSet(SingleError.fromMessage(error)));
         }
 
         @Override
@@ -103,14 +105,17 @@ public class FlyJavaCompile {
                                 var compileSourceWriterResultAggregateErrorResult = Optional.ofNullable(processor)
                                         .map(p -> p.process(c, clzzes))
                                         .orElse(Result.err(new CompileAndLoadError("Could not process.")));
-                                return Result.from(new CompileAndLoadResult<>(
+                                return Result.from(
+                                        Ok.ok(new CompileAndLoadResult<>(
                                                 clzzes,
                                                 compileSourceWriterResultAggregateErrorResult
+                                                        .one()
                                                         .orElseRes(c)
-                                        ),
-                                        compileSourceWriterResultAggregateErrorResult.error().get());
+                                        )),
+                                        compileSourceWriterResultAggregateErrorResult.e());
                             })
-                            .orElseErr(Result.err(new CompileAndLoadError("Compile result was not found from file provider.")));
+                            .one()
+                            .orError(() -> Err.err(new CompileAndLoadError("Compile result was not found from file provider.")));
                 });
     }
 
@@ -269,7 +274,7 @@ public class FlyJavaCompile {
                     new CompileAndLoadError(diagnostics.getDiagnostics().stream()
                             .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
                             .map(d -> d.getMessage(Locale.US))
-                            .map(ErrorCollect::fromMessage)
+                            .map(SingleError::fromMessage)
                             .collect(Collectors.toSet())
                     ));
         }

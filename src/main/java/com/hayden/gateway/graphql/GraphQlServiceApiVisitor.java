@@ -8,7 +8,7 @@ import com.hayden.graphql.models.federated.service.FederatedGraphQlServiceFetche
 import com.hayden.graphql.models.visitor.model.*;
 import com.hayden.utilitymodule.result.agg.Agg;
 import com.hayden.utilitymodule.result.agg.AggregateError;
-import com.hayden.utilitymodule.result.error.ErrorCollect;
+import com.hayden.utilitymodule.result.error.SingleError;
 import com.hayden.utilitymodule.result.agg.Responses;
 import com.hayden.utilitymodule.result.Result;
 import graphql.schema.GraphQLCodeRegistry;
@@ -36,11 +36,11 @@ public interface GraphQlServiceApiVisitor extends Invalidatable, Removable, Id, 
         BiConsumer<String, FederatedGraphQlServiceFetcherItemId> callback;
     }
 
-    record GraphQlServiceVisitorError(Set<ErrorCollect> errors)
+    record GraphQlServiceVisitorError(Set<SingleError> errors)
             implements AggregateError.StdAggregateError {
 
         public GraphQlServiceVisitorError(String error) {
-            this(Sets.newHashSet(ErrorCollect.fromMessage(error)));
+            this(Sets.newHashSet(SingleError.fromMessage(error)));
         }
 
         public GraphQlServiceVisitorError() {
