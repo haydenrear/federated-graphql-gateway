@@ -175,7 +175,7 @@ public class DgsCompiler {
         FileUtils.deleteFilesRecursive(this.graphQlCompilerProperties.getCompilerIn());
         FileUtils.deleteFilesRecursive(this.graphQlCompilerProperties.getSchemaOutput());
 
-        return Result.from(result.r(), result.error());
+        return Result.from(result.r(), result.one().e());
     }
 
 
@@ -285,8 +285,10 @@ public class DgsCompiler {
         GraphQlFetcherFetcherClassesResult fetcherClassesResult = new GraphQlFetcherFetcherClassesResult(
                 new ArrayList<>(),
                 dgsCompile.map(r -> r.compileLoadResult)
+                        .one()
                         .orElseRes(null),
                 dataFetcherCompile.map(d -> d.dataFetcherCompileLoadResult)
+                        .one()
                         .orElseRes(null)
         );
         return Stream.of(dgsCompile, dataFetcherCompile)

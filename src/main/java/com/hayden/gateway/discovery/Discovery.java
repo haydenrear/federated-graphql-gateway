@@ -102,7 +102,7 @@ public class Discovery implements ApplicationContextAware {
     }
 
     private static void logErrors(Result<GraphQlServiceApiVisitor.GraphQlServiceVisitorResponse, GraphQlServiceApiVisitor.GraphQlServiceVisitorError> result) {
-        Optional.ofNullable(result.error())
+        Optional.ofNullable(result.one().e())
                 .filter(ResultTy::isPresent)
                 .stream()
                 .flatMap(e -> !e.get().errors().isEmpty() ? Stream.of(e.get().errors()) : Stream.empty())

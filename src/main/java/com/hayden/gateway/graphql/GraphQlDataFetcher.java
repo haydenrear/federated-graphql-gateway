@@ -85,12 +85,13 @@ public record GraphQlDataFetcher(@Delegate GraphQlDataFetcherDiscoveryModel mode
 
         ctx.codegenContext().javaCompiler()
                 .dataFetcherClasses(this.model.fetcherSource(), this.model.source())
-                .stream()
+                .many()
+                .toStream()
                 .flatMap(g -> g.results().stream())
                 .map(result -> Map.entry(
                         result.typeName(),
                         MapFunctions.CollectMap(result.fetchers().entrySet().stream()
-                                .flatMap(f -> nextDataFetcherItem(f, ctx).stream()))
+                                .flatMap(f -> nextDataFetcherItem(f, ctx).many().toStream()))
                 ))
                 .forEach(nextFetcher -> registerDataFetcher(codeRegistryBuilder, nextFetcher, ctx));
 

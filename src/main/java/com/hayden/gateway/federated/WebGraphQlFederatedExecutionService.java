@@ -34,6 +34,7 @@ public class WebGraphQlFederatedExecutionService implements FederatedExecutionGr
                     var v =  f.buildFederatedClient(transport);
                     return v;
                 })
+                .one()
                 .orElseRes(null);
     }
 
