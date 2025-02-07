@@ -9,8 +9,10 @@ import com.hayden.gateway.graphql.Context;
 import com.hayden.gateway.graphql.GraphQlServiceApiVisitor;
 import com.hayden.gateway.graphql.RegistriesComposite;
 import com.hayden.utilitymodule.result.Result;
+import com.hayden.utilitymodule.result.res_many.IManyResultItem;
 import com.hayden.utilitymodule.result.res_support.one.ResultTy;
 import com.hayden.utilitymodule.result.error.SingleError;
+import com.hayden.utilitymodule.result.res_ty.IResultItem;
 import com.netflix.graphql.dgs.DgsCodeRegistry;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsTypeDefinitionRegistry;
@@ -103,7 +105,7 @@ public class Discovery implements ApplicationContextAware {
 
     private static void logErrors(Result<GraphQlServiceApiVisitor.GraphQlServiceVisitorResponse, GraphQlServiceApiVisitor.GraphQlServiceVisitorError> result) {
         Optional.ofNullable(result.one().e())
-                .filter(ResultTy::isPresent)
+                .filter(IResultItem::isPresent)
                 .stream()
                 .flatMap(e -> !e.get().errors().isEmpty() ? Stream.of(e.get().errors()) : Stream.empty())
                 .findAny()
@@ -111,6 +113,6 @@ public class Discovery implements ApplicationContextAware {
     }
 
     private static @NotNull String printError(Set<SingleError> e) {
-        return e.stream().map(g -> g.getMessage()).collect(Collectors.joining(", "));
+        return e.stream().map(SingleError::getMessage).collect(Collectors.joining(", "));
     }
 }
