@@ -59,7 +59,10 @@ import static org.mockito.ArgumentMatchers.any;
 @ExtendWith(SpringExtension.class)
 @Slf4j
 @ActiveProfiles("deploy-test")
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
+                                  "otel.instrumentation.spring-webflux.enabled=false",
+                                  "otel.instrumentation.spring-web.enabled=false",
+                                  "otel.instrumentation.spring-webmvc.enabled=false"})
 public class SchemaBuilderTest {
 
     private static FederatedGraphQlServiceFetcherItemId.FederatedGraphQlServiceFetcherId id;
